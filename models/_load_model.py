@@ -1,7 +1,8 @@
 # This script exists just to load models faster
 import functools
 import os
-
+from accelerate import Accelerator
+from accelerate import DistributedDataParallelKwargs
 import torch
 from transformers import (AutoModelForCausalLM,
                           AutoModelForSequenceClassification, AutoTokenizer,
@@ -24,7 +25,10 @@ def _load_pretrained_model(model_name, device, torch_dtype=torch.float16):
     #     model = AutoModelForCausalLM.from_pretrained(os.path.join(MODEL_PATH, model_name), cache_dir=None, torch_dtype=torch_dtype)
     elif model_name == 'roberta-large-mnli':
          model = AutoModelForSequenceClassification.from_pretrained("roberta-large-mnli")#, torch_dtype=torch_dtype)
-    model.to(device)
+    kwargs_handlers = [DistributedDataParallelKwargs(find_unused_parameters=True)]
+    accelerator = Accelerator(mixed_precision="bf16", kwargs_handlers=kwargs_handlers)  
+    model = AutoModelForCausalLM.from_pretrained(model_name, device_map=accelerator.device, trust_remote_code=True, torch_dtype=torch.bfloat16)
+    # model.to(device)
     return model
 
 
@@ -46,4 +50,5 @@ def _load_pretrained_tokenizer(model_name, use_fast=False):
         tokenizer.pad_token = tokenizer.eos_token
     elif model_name == "falcon-7b":
         tokenizer = AutoTokenizer.from_pretrained(os.path.join(MODEL_PATH, model_name), trust_remote_code=True, cache_dir=None, use_fast=use_fast)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True) 
     return tokenizer

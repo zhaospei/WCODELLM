@@ -2,7 +2,7 @@ from ._load_model import _load_pretrained_model, _load_pretrained_tokenizer
 # from .openai_models import openai_query
 
 
-def load_model_and_tokenizer(model_name='opt-13b', device='cuda:2', **kwargs):
+def load_model_and_tokenizer(model_name='opt-13b', device='cuda:0', **kwargs):
     if model_name in {'gpt-3.5-turbo'}:
         return None, None
     if model_name in {"opt-2.7b", "opt-1.3b", "opt-6.7b", 'opt-13b'}:

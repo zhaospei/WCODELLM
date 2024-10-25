@@ -17,8 +17,8 @@ import dataeval.coqa as coqa
 import dataeval.nq_open as nq_open
 import dataeval.triviaqa as triviaqa
 import dataeval.SQuAD as SQuAD
-import dataeval.TruthfulQA as TruthfulQA
 import dataeval.w_humaneval as human_eval
+from dataeval.w_humaneval import cleanup_code as human_eval_cleanup_code
 import models
 import utils
 from func.metric import *
@@ -29,7 +29,7 @@ parser.add_argument('--dataset', type=str, default='human_eval')
 parser.add_argument('--device', type=str, default='cuda:0')
 parser.add_argument('--fraction_of_data_to_use', type=float, default=1.0)
 parser.add_argument('--num_generations_per_prompt', type=int, default=10)
-parser.add_argument('--max_new_tokens', type=int, default=256)
+parser.add_argument('--max_new_tokens', type=int, default=500)
 parser.add_argument('--temperature', type=float, default=0.5)
 parser.add_argument('--decoding_method', type=str, default='greedy')
 parser.add_argument('--top_p', type=float, default=0.99)
@@ -40,7 +40,8 @@ parser.add_argument('--project_ind', type=int, default=0)
 
 
 args = parser.parse_args()
-logInfo = open("./data/output/logInfo_{}_{}.txt".format(args.model, args.dataset), mode="w",encoding="utf-8")
+print(args.model.replace('/', '_'))
+logInfo = open("./data/output/logInfo_{}_{}.txt".format(args.model.replace('/', '_'), args.dataset), mode="w",encoding="utf-8")
 
 
 # _UNUSED_TOKENIZER = models.load_tokenizer()
@@ -48,23 +49,27 @@ def get_dataset_fn(data_name):
     if data_name == 'human_eval':
         return human_eval.get_dataset
 
+def get_clean_up_code_fn(data_name):
+    if data_name == 'human_eval':
+        return human_eval_cleanup_code
 
-def get_generation_config(input_ids, tokenizer, data_name):
-    assert len(input_ids.shape) == 2
-    max_length_of_generated_sequence = 256
-    if data_name == 'triviaqa':
-        generation_config = triviaqa._generate_config(tokenizer)
-    if data_name == 'coqa':
-        generation_config = coqa._generate_config(tokenizer)
-    if data_name == 'nq_open':
-        generation_config = nq_open._generate_config(tokenizer)
-    if data_name == 'SQuAD':
-        generation_config = SQuAD._generate_config(tokenizer)
-    generation_config['max_new_tokens'] = max_length_of_generated_sequence
-    generation_config['early_stopping'] = True
-    # https://jaketae.github.io/study/gpt2/#setup
-    generation_config['pad_token_id'] = tokenizer.eos_token_id
-    return generation_config
+
+# def get_generation_config(input_ids, tokenizer, data_name):
+#     assert len(input_ids.shape) == 2
+#     max_length_of_generated_sequence = 256
+#     if data_name == 'triviaqa':
+#         generation_config = triviaqa._generate_config(tokenizer)
+#     if data_name == 'coqa':
+#         generation_config = coqa._generate_config(tokenizer)
+#     if data_name == 'nq_open':
+#         generation_config = nq_open._generate_config(tokenizer)
+#     if data_name == 'SQuAD':
+#         generation_config = SQuAD._generate_config(tokenizer)
+#     generation_config['max_new_tokens'] = max_length_of_generated_sequence
+#     generation_config['early_stopping'] = True
+#     # https://jaketae.github.io/study/gpt2/#setup
+#     generation_config['pad_token_id'] = tokenizer.eos_token_id
+#     return generation_config
 
 
 @torch.no_grad()
@@ -76,19 +81,21 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
 
     utils.seed_everything(seed)
     dataset = get_dataset_fn(args.dataset)(tokenizer)
+    cleanup_code = get_clean_up_code_fn(args.dataset)
     if args.fraction_of_data_to_use < 1.0:
         dataset = dataset.train_test_split(test_size=(1 - args.fraction_of_data_to_use), seed=seed)['train']
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
 
     if old_sequences is None:
         old_sequences = []
-    old_sequences = {_['id']: _ for _ in old_sequences}
+    old_sequences = {_['task_id']: _ for _ in old_sequences}
 
     sequences = []
     time_start=time.time()
     for batch_idx, batch in tqdm.tqdm(enumerate(dataloader), total=len(dataloader)):
-        if batch['id'][0] in old_sequences:
-            sequences.append(old_sequences[batch['id'][0]])
+        # print(batch.keys())
+        if batch['task_id'][0] in old_sequences:
+            sequences.append(old_sequences[batch['task_id'][0]])
             continue
 
         input_ids = batch['input_ids'].to(device)
@@ -136,6 +143,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         generations = []
         num_gens = args.num_generations_per_prompt
         while num_gens > 0:
+            print("num_gens: ", num_gens)
             dict_outputs =  model.generate(input_ids, attention_mask=batch['attention_mask'].to(device),
                             num_beams=1, max_new_tokens=args.max_new_tokens, num_return_sequences=min(max_num_gen_once, num_gens),
                             do_sample=True, top_p=args.top_p, top_k=args.top_k,
@@ -150,9 +158,11 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             num_tokens = get_num_tokens(generation)
             # scores = dict_outputs.scores
             # predictive_entropy = get_lenghthNormalized_entropy(scores, num_tokens) 
-            # hidden_states = dict_outputs.hidden_states
+            hidden_states = dict_outputs.hidden_states
             # eigenIndicator, eigenValue = getEigenIndicator_v0(hidden_states, num_tokens)
-            print(dict_outputs.keys())
+            # print(len(dict_outputs['hidden_states']))
+            # print(len(dict_outputs['hidden_states'][0]))
+            # print(len(dict_outputs['hidden_states'][0][0]))
             num_gens -= len(generation)
 
         # generations = torch.nested.nested_tensor(generations).to_padded_tensor(tokenizer.eos_token_id)
@@ -176,6 +186,8 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             dict(
                 most_likely_generation_ids = most_likely_generations,
                 generations_ids=generations,
+                hidden_states=hidden_states,
+                num_tokens=num_tokens
             )
         )
         # curr_seq.update(
@@ -225,10 +237,10 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         sequences.append(curr_seq)
         torch.cuda.empty_cache()
         ########## 信息打印 #########
-        print("Prompt:", tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True))
-        print("Problem:", batch['original_prompt'][0])
-        print("Answer:", batch['canonical_solution'][0])
-        print("MostLikelyAns:", tokenizer.decode(curr_seq['most_likely_generation_ids'], skip_special_tokens=True))
+        # print("Prompt:", tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True))
+        # print("Problem:", batch['original_prompt'][0])
+        # print("Answer:", batch['canonical_solution'][0])
+        # print("MostLikelyAns:", cleanup_code(tokenizer.decode(curr_seq['most_likely_generation_ids'], skip_special_tokens=True)))
         # print("Batch_Generations:", generated_texts)
         # print("Perplexity:", perplexity)
         # print("Energy:", energy_score)
@@ -268,8 +280,8 @@ def main(overwrite=False, continue_from=None, parallel:int=None):
     else:
         old_sequences = []
         model_name = args.model
-        if '/' in model_name:
-            model_name = model_name.replace('/', '_')
+        # if '/' in model_name:
+        #     model_name = model_name.replace('/', '_')
         cache_dir = os.path.join(_settings.GENERATION_FOLDER, f'{model_name}_{args.dataset}_{args.project_ind}')
         os.makedirs(cache_dir, exist_ok=True)
         old_results = glob.glob(os.path.join(cache_dir, '*.pkl'))
