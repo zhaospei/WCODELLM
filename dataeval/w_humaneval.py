@@ -47,9 +47,7 @@ def get_dataset(tokenizer, sft=False):
     return dataset
 
 def _generate_config(tokenizer):
-    eos_token_id = [tokenizer.encode(_)[-1] for _ in ['.', '\n']] 
-    eos_token_id += [tokenizer.eos_token_id]
-    return dict(eos_token_id=eos_token_id)
+    return dict()
 
 def cleanup_code(
     code: str,

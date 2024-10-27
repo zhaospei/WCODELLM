@@ -13,11 +13,8 @@ from sentence_transformers import SentenceTransformer
 from torchmetrics.text.bert import BERTScore
 
 import _settings
-import dataeval.coqa as coqa
-import dataeval.nq_open as nq_open
-import dataeval.triviaqa as triviaqa
-import dataeval.SQuAD as SQuAD
 import dataeval.w_humaneval as human_eval
+import dataeval.w_mbpp as mbpp
 from dataeval.w_humaneval import cleanup_code as human_eval_cleanup_code
 import models
 import utils
@@ -28,7 +25,7 @@ parser.add_argument('--model', type=str, default='llama-13b-hf')
 parser.add_argument('--dataset', type=str, default='human_eval')
 parser.add_argument('--device', type=str, default='cuda:0')
 parser.add_argument('--fraction_of_data_to_use', type=float, default=1.0)
-parser.add_argument('--num_generations_per_prompt', type=int, default=20)
+parser.add_argument('--num_generations_per_prompt', type=int, default=10)
 parser.add_argument('--max_new_tokens', type=int, default=500)
 parser.add_argument('--temperature', type=float, default=0.5)
 parser.add_argument('--decoding_method', type=str, default='greedy')
@@ -50,28 +47,26 @@ logInfo = open("./data/output/logInfo_{}_{}.txt".format(args.model.replace('/', 
 def get_dataset_fn(data_name):
     if data_name == 'human_eval':
         return human_eval.get_dataset
+    if data_name == 'mbpp':
+        return mbpp.get_dataset
 
 def get_clean_up_code_fn(data_name):
     if data_name == 'human_eval':
         return human_eval_cleanup_code
 
+def get_num_tokens(generation, tokenizer):
+    if args.dataset == 'human_eval':
+        return humaneval_get_num_tokens(generation, tokenizer)
+    if args.dataset == 'mbpp':
+        return mbpp_get_num_tokens(generation, tokenizer)
 
-# def get_generation_config(input_ids, tokenizer, data_name):
-#     assert len(input_ids.shape) == 2
-#     max_length_of_generated_sequence = 256
-#     if data_name == 'triviaqa':
-#         generation_config = triviaqa._generate_config(tokenizer)
-#     if data_name == 'coqa':
-#         generation_config = coqa._generate_config(tokenizer)
-#     if data_name == 'nq_open':
-#         generation_config = nq_open._generate_config(tokenizer)
-#     if data_name == 'SQuAD':
-#         generation_config = SQuAD._generate_config(tokenizer)
-#     generation_config['max_new_tokens'] = max_length_of_generated_sequence
-#     generation_config['early_stopping'] = True
-#     # https://jaketae.github.io/study/gpt2/#setup
-#     generation_config['pad_token_id'] = tokenizer.eos_token_id
-#     return generation_config
+
+def get_generation_config(tokenizer, data_name):
+    if data_name == 'human_eval':
+        generation_config = human_eval._generate_config(tokenizer)
+    if data_name == 'mbpp':
+        generation_config = mbpp._generate_config(tokenizer)
+    return generation_config
 
 
 @torch.no_grad()
@@ -86,6 +81,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
     utils.seed_everything(seed)
     dataset = get_dataset_fn(args.dataset)(tokenizer)
     cleanup_code = get_clean_up_code_fn(args.dataset)
+    generation_config = get_generation_config(tokenizer, args.dataset)
     if args.fraction_of_data_to_use < 1.0:
         dataset = dataset.train_test_split(test_size=(1 - args.fraction_of_data_to_use), seed=seed)['train']
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
@@ -103,6 +99,10 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             continue
 
         input_ids = batch['input_ids'].to(device)
+        # print(f"input_ids: {input_ids}")
+        # print(f"input_ids shape: {input_ids.shape}")
+        # print(f"attention_mask: {batch['attention_mask']}")
+        # print(f"attention_mask shape: {batch['attention_mask'].shape}")
         input_length = input_ids.shape[1]
         torch.cuda.empty_cache()
         generations = []
@@ -114,10 +114,12 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                             temperature=args.temperature, 
                             eos_token_id=tokenizer.eos_token_id,
                             pad_token_id=tokenizer.eos_token_id,
+                            # **generation_config,
                             output_hidden_states = True, return_dict_in_generate=True, output_scores=True
                             )
 
             generation = dict_outputs.sequences[:, input_length:].cpu()
+            print(f"Generation shape: {generation.shape}")
             num_tokens = get_num_tokens(generation, tokenizer)
             for gen, num_token in zip(generation, num_tokens):
                 generations.append(gen[:num_token])
@@ -139,6 +141,11 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                 num_tokens=num_tokens
             )
         )
+        
+        print("Prompt:", tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True))
+        print("Problem:", batch['original_prompt'][0])
+        print("AnswerGT:", batch['canonical_solution'][0])
+        print("MostLikelyAns:", tokenizer.decode(curr_seq['generations_ids'][0], skip_special_tokens=True))
 
         sequences.append(curr_seq)
         torch.cuda.empty_cache()
@@ -159,7 +166,20 @@ def find_sublist(gen_tensor_ids, stop_word_ids):
     
     return first_index
 
-def get_num_tokens(generation, tokenizer):
+def mbpp_get_num_tokens(generation, tokenizer):
+    stop_words = ["[DONE]"]
+    tokenizer_stop_words = [tokenizer.encode(_)[1:] for _ in stop_words] + [[tokenizer.eos_token_id]]
+    num_tokens = []
+    for ids in generation:
+        min_stop_idx = len(ids)
+        for stop_word in tokenizer_stop_words:
+            stop_index = find_sublist(ids, stop_word)
+            if 0 <= stop_index < min_stop_idx:
+                min_stop_idx = stop_index
+        num_tokens.append(min_stop_idx)
+    return num_tokens
+
+def humaneval_get_num_tokens(generation, tokenizer):
     stop_words = ["\ndef", "\nclass", "\nif", "\n#", "\nprint"]
     tokenizer_stop_words = [tokenizer.encode(_)[1:] for _ in stop_words] + [[tokenizer.eos_token_id]]
     num_tokens = []
