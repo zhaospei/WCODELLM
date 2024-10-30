@@ -293,3 +293,97 @@ def evaluate_functional_correctness(
         print("Total:", np.sum(total))
         print("Correct:", np.sum(correct))
     return pass_at_k
+
+def evaluate_functional_correctness_each_sample(
+        input_file: str = None,
+        tmp_dir: str = "./",
+        n_workers: int = 32,
+        timeout: float = 10.0,
+        problem_file: str = "../data/humaneval_python.jsonl.gz",
+        out_dir: str = None,
+        k: List[int] = [1, 10, 100],
+        test_groundtruth: bool = False,
+        example_test: bool = False,
+        is_mbpp: bool = False,
+        language: str = "python",
+):
+    """
+    Evaluates the functional correctness of a model.
+    """
+    if example_test:
+        print("Example test...")
+
+    problems = read_dataset(problem_file,
+                            dataset_type="humaneval")
+    sample_jsonl = stream_jsonl_all(input_file)
+
+
+    with ThreadPoolExecutor(max_workers=n_workers) as executor:
+
+        futures = []
+        completion_id = Counter()
+        n_samples = 0
+        results = defaultdict(list)
+
+        if test_groundtruth:
+            print("Testing ground truth...")
+            for sample in tqdm(problems.values()):
+                task_id = sample["task_id"]
+                lang = task_id.split("/")[0].lower()
+                if lang == "javascript":
+                    lang = "js"
+                tmp_dir_ = os.path.join(tmp_dir, lang, "evaluation")
+                sample["generation"] = sample["canonical_solution"]
+                sample["test_code"] = process_humaneval_test(sample, problems, example_test, language)
+                if sample["test_code"] is None:
+                    continue
+                args = (task_id, sample, lang, timeout, tmp_dir_, completion_id[task_id])
+                future = executor.submit(check_correctness, *args)
+                futures.append(future)
+                completion_id[task_id] += 1
+                n_samples += 1
+        else:
+            print("Reading samples...")
+            for sample in tqdm(sample_jsonl):
+                task_id = sample["task_id"]
+                if not is_mbpp:
+                    lang = language
+                if not is_mbpp and lang == "javascript":
+                    lang = "js"
+                if is_mbpp:
+                    lang = "python"
+                tmp_dir_ = os.path.join(tmp_dir, lang, "evaluation")
+                sample["task_id"] = task_id
+                sample["test_code"] = process_humaneval_test(sample, problems, example_test, is_mbpp, language)
+                if sample["test_code"] is None:
+                    continue
+                if "completion_id" in sample:
+                    completion_id_ = sample["completion_id"]
+                else:
+                    completion_id_ = completion_id[task_id]
+                args = (task_id, sample, lang, timeout, tmp_dir_, completion_id_)
+                future = executor.submit(check_correctness, *args)
+                futures.append(future)
+                completion_id[task_id] += 1
+                n_samples += 1
+
+        if len(completion_id) == len(problems):
+            evaluate_pass_at_k = True
+        else:
+            evaluate_pass_at_k = False
+
+        print("Running test suites...")
+        for future in tqdm(as_completed(futures), total=len(futures)):
+            result = future.result()
+            # print(result)
+            results[result["completion_id"]].append((result["completion_id"], result))
+
+    # Calculate pass@k.
+    # total, correct = [], []
+    return results
+    # return_results = []
+    # for result in results.values():
+    #     return_results = 
+    #     passed = [r[1]["passed"] for r in result]
+    #     total.append(len(passed))
+    #     correct.append(sum(passed))

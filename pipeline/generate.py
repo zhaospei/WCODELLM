@@ -89,7 +89,8 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
     if old_sequences is None:
         old_sequences = []
     old_sequences = {_['task_id']: _ for _ in old_sequences}
-
+    # print('Checking task id: ', dataset[0]['task_id'])
+    # print(dataset[0])
     sequences = []
     time_start=time.time()
     for batch_idx, batch in tqdm.tqdm(enumerate(dataloader), total=len(dataloader)):
@@ -97,7 +98,8 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         if batch['task_id'][0] in old_sequences:
             sequences.append(old_sequences[batch['task_id'][0]])
             continue
-
+        # print(f"Batch {batch_idx} | Task ID: {batch['task_id']}")
+        # print(batch)
         input_ids = batch['input_ids'].to(device)
         # print(f"input_ids: {input_ids}")
         # print(f"input_ids shape: {input_ids.shape}")
@@ -129,6 +131,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             
 
         # # remember the data
+        # print(batch['task_id'][0])
         curr_seq = dict(
             prompt=tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True),
             id=batch['task_id'][0],
@@ -210,9 +213,9 @@ def main(overwrite=False, continue_from=None, parallel:int=None):
         os.makedirs(cache_dir, exist_ok=True)
         old_results = glob.glob(os.path.join(cache_dir, '*.pkl'))
         old_results = [_ for _ in old_results if '_partial' not in _]
-        if len(old_results) > 0 and not overwrite:
-            print(f'Found {len(old_results)} generations in {cache_dir}.')
-            return
+        # if len(old_results) > 0 and not overwrite:
+        #     print(f'Found {len(old_results)} generations in {cache_dir}.')
+        #     return
         run_id = len(old_results)
         with open(os.path.join(cache_dir, f'args{run_id}.json'), 'w') as f:
             json.dump(args.__dict__, f)

@@ -79,7 +79,7 @@ def _save_dataset(tokenizer, max_seq_len, max_gen_len):
 
 def get_dataset(tokenizer, max_seq_len=4096, max_gen_len=500):
     dataset = datasets.load_from_disk(_save_dataset(tokenizer, max_seq_len, max_gen_len))
-
+    
     def encode_mbpp(example):
         tokenized_prompt = tokenizer(example['prompt'], truncation=False, padding=False)
         inputids = tokenized_prompt["input_ids"][-max_seq_len:]
