@@ -1,0 +1,9 @@
+sentence_transformers
+transformers
+pandas
+torchmetrics
+datasets
+accelerate
+rouge_score
+selfcheckgpt
+numpy<2.0

@@ -249,4 +249,5 @@ def main(overwrite=False, continue_from=None, parallel:int=None):
     return
 
 if __name__ == '__main__':
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
     task_runner = main(parallel=args.nprocess)
