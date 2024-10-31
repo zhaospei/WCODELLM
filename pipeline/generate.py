@@ -24,6 +24,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='llama-13b-hf')
 parser.add_argument('--dataset', type=str, default='human_eval')
 parser.add_argument('--device', type=str, default='cuda:0')
+parser.add_argument('--tensor_parallel_size', type=int, default=1)
 parser.add_argument('--fraction_of_data_to_use', type=float, default=1.0)
 parser.add_argument('--num_generations_per_prompt', type=int, default=10)
 parser.add_argument('--max_new_tokens', type=int, default=500)
@@ -77,7 +78,16 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
     #     print(f"Layer: {name} | Shape: {param.shape} | Parameters: {param.numel()}")
     # SenSimModel = SentenceTransformer('./data/weights/nli-roberta-large')
     # bertscore = BERTScore(model_name_or_path="./data/weights/bert-base/", device="cuda")
-
+    # llm = LLM(model_name, args.tensor_parallel_size)
+    # sampling_params = SamplingParams(
+    #     n=args.num_generations_per_prompt,
+    #     temperature=args.temperature, 
+    #     top_k=args.top_k, 
+    #     top_p=args.top_p,
+    #     max_tokens=args.max_new_tokens,
+    # )
+    # tokenizer = llm.tokenizer
+    
     utils.seed_everything(seed)
     dataset = get_dataset_fn(args.dataset)(tokenizer)
     cleanup_code = get_clean_up_code_fn(args.dataset)
