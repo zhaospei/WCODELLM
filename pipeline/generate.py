@@ -34,14 +34,14 @@ parser.add_argument('--top_k', type=int, default=10)
 parser.add_argument('--seed', type=int, default=2023)
 parser.add_argument('--nprocess', type=int, default=None)
 parser.add_argument('--project_ind', type=int, default=0)
-parser.add_argument("--layers", nargs='*', default=[-1], type=int,
+parser.add_argument("--layer", default=-1, type=int,
                         help="List of layers of the LM to save embeddings from indexed negatively from the end")
 
+#-1: Last Layer, -2: Middle Layer, Others: Specific Layer
 
 args = parser.parse_args()
 print(args.model.replace('/', '_'))
-logInfo = open("./data/output/logInfo_{}_{}.txt".format(args.model.replace('/', '_'), args.dataset), mode="w",encoding="utf-8")
-
+logInfo = open("./data/output/logInfo_{}_{}_{}.txt".format(args.model.replace('/', '_'), args.dataset, args.layer), mode="w",encoding="utf-8")
 
 # _UNUSED_TOKENIZER = models.load_tokenizer()
 def get_dataset_fn(data_name):
@@ -108,6 +108,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         input_length = input_ids.shape[1]
         torch.cuda.empty_cache()
         generations = []
+        generations_decoded = []
         num_gens = args.num_generations_per_prompt
         while num_gens > 0:
             dict_outputs =  model.generate(input_ids, attention_mask=batch['attention_mask'].to(device),
@@ -125,8 +126,13 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             num_tokens = get_num_tokens(generation, tokenizer)
             for gen, num_token in zip(generation, num_tokens):
                 generations.append(gen[:num_token])
+            for gen_ids in generations:
+                generations_decoded.append(tokenizer.decode(gen_ids, skip_special_tokens=True))
             hidden_states = dict_outputs.hidden_states
-            middle_layer_embeddings = getMiddleLayerEmbeddingEachToken(hidden_states, num_tokens)
+            if args.layer == -2:
+                layer_embeddings = getMiddleLayerEmbeddingEachToken(hidden_states, num_tokens)
+            else:
+                layer_embeddings = getLayerEmbeddingEachToken(hidden_states, num_tokens, args.layer)
             num_gens -= len(generation)
             
 
@@ -139,7 +145,8 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         )
         curr_seq.update(
             dict(
-                middle_layer_embeddings = middle_layer_embeddings,
+                layer_embeddings = layer_embeddings,
+                generations=generations_decoded,
                 generations_ids=generations,
                 num_tokens=num_tokens
             )
@@ -149,7 +156,12 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         print("Problem:", batch['original_prompt'][0])
         print("AnswerGT:", batch['canonical_solution'][0])
         print("MostLikelyAns:", tokenizer.decode(curr_seq['generations_ids'][0], skip_special_tokens=True))
-
+        
+        print("Prompt:", tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True), file=logInfo)
+        print("Problem:", batch['original_prompt'][0], file=logInfo)
+        print("AnswerGT:", batch['canonical_solution'][0], file=logInfo)
+        print("MostLikelyAns:", tokenizer.decode(curr_seq['generations_ids'][0], skip_special_tokens=True), file=logInfo)
+        print("\n","\n","\n", file=logInfo)
         sequences.append(curr_seq)
         torch.cuda.empty_cache()
     return sequences

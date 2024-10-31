@@ -199,6 +199,18 @@ def getMiddleLayerEmbeddingEachToken(hidden_states, num_tokens):
     # print(len(last_embeddings[0][2]))
     return last_embeddings
 
+def getLayerEmbeddingEachToken(hidden_states, num_tokens, selected_layer):
+    last_embeddings = {}
+    for ind in range(hidden_states[1][-1].shape[0]):
+        last_embeddings[ind] = []
+        for ind1 in range(num_tokens[ind]):
+            last_embeddings[ind].append(hidden_states[ind1][selected_layer][ind,-1,:].detach().cpu().float().numpy().tolist())
+        # last_embeddings[ind] = hidden_states[:num_tokens[ind]][selected_layer][ind,:,:]
+        # last_embeddings[ind] = [last_embeddings[i][ind,-1,:].detach().cpu().numpy().tolist() for i in range(num_tokens[ind])]
+    # print(last_embeddings[0][2])
+    # print(len(last_embeddings[0][2]))
+    return last_embeddings
+
 ###### 通过SVD分解计算特征值，从而通过特征值的乘积计算行列式
 ##### 利用所有token的平均特征作为句子的特征
 ##### 需要考虑每个句子的长度不一致，去除padding的token的影响
