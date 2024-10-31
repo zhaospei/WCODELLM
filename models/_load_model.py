@@ -27,7 +27,8 @@ def _load_pretrained_model(model_name, device, torch_dtype=torch.float16):
          model = AutoModelForSequenceClassification.from_pretrained("roberta-large-mnli")#, torch_dtype=torch_dtype)
     kwargs_handlers = [DistributedDataParallelKwargs(find_unused_parameters=True)]
     accelerator = Accelerator(mixed_precision="bf16", kwargs_handlers=kwargs_handlers)  
-    model = AutoModelForCausalLM.from_pretrained(model_name, device_map=accelerator.device, trust_remote_code=True, torch_dtype=torch.bfloat16)
+    # model = AutoModelForCausalLM.from_pretrained(model_name, device_map=accelerator.device, trust_remote_code=True, torch_dtype=torch.bfloat16)
+    model = AutoModelForCausalLM.from_pretrained(model_name, device_map='auto', torch_dtype=torch.bfloat16)
     # model.to(device)
     return model
 
