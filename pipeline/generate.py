@@ -259,6 +259,7 @@ def main(overwrite=False, continue_from=None, parallel:int=None):
         #     model_name = model_name.replace('/', '_')
         # cache_dir = os.path.join(_settings.GENERATION_FOLDER, f'{model_name}_{args.dataset}_{args.project_ind}')
         # os.makedirs(cache_dir, exist_ok=True)
+        cache_dir = OUTPUT_DIR
         old_results = glob.glob(os.path.join(OUTPUT_DIR, '*.pkl'))
         old_results = [_ for _ in old_results if '_partial' not in _]
         # if len(old_results) > 0 and not overwrite:
