@@ -14,7 +14,7 @@ class HumanEvalDataset:
         self.root = root
         self.data = open(os.path.join(self.root, f"humaneval-{language}.jsonl")).readlines()
 
-        tmp = self.get_qa_only_data(self.data, issft)
+        tmp = self.get_qa_only_data(self.data, language, issft)
         self.clean_data = []
         for i in range(len(tmp)):
             for j in range(sample_num):
@@ -23,7 +23,7 @@ class HumanEvalDataset:
         np.random.seed(1234)
         print(f"Read HumanEval from {root}, number of samples {len(self.clean_data)}")
 
-    def get_qa_only_data(self, data_json, sft=False):
+    def get_qa_only_data(self, data_json, language, sft=False):
         """
         data_json: the jsonl file of HumanEval
         sft: whether to use the SFT setting
@@ -44,7 +44,10 @@ class HumanEvalDataset:
                 s = line["stop_tokens"]
             else:
                 s = []
-            ans.append({"prompt":prompt, "task_id":line["task_id"], "original_prompt": origin_prompt, "canonical_solution": line["canonical_solution"], "stopwords":s})
+            if language == "python":
+                ans.append({"prompt":prompt, "task_id":line["task_id"], "original_prompt": origin_prompt, "canonical_solution": line["canonical_solution"], "stopwords":s})
+            else:
+                ans.append({"prompt":prompt, "task_id":line["task_id"], "original_prompt": origin_prompt, "canonical_solution": "<NO_CANONICAL_SOLUTION>", "stopwords":s})
         return ans
 
     def __len__(self):

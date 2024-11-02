@@ -7,3 +7,4 @@ accelerate
 rouge_score
 selfcheckgpt
 numpy<2.0
+bitsandbytes

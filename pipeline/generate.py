@@ -73,9 +73,9 @@ def get_clean_up_code_fn(data_name):
     if data_name == 'human_eval':
         return human_eval_cleanup_code
 
-def get_num_tokens(generation, tokenizer):
+def get_num_tokens(generation, tokenizer, language_type='python', stop_words=[]):
     if args.dataset == 'human_eval':
-        return humaneval_get_num_tokens(generation, tokenizer)
+        return humaneval_get_num_tokens(generation, tokenizer, language_type, stop_words)
     if args.dataset == 'mbpp':
         return mbpp_get_num_tokens(generation, tokenizer)
 
@@ -115,9 +115,10 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
     utils.seed_everything(seed)
     dataset = get_dataset_fn(args.dataset)(tokenizer, language=args.language)
     cleanup_code = get_clean_up_code_fn(args.dataset)
-    stop_words = get_stop_words(args.dataset)
+    stop_words = dataset[0]['stopwords']
+    # print(stop_words)
     
-    stop_criteria = KeywordsStoppingCriteria(stop_words, tokenizer)
+    # stop_criteria = KeywordsStoppingCriteria(stop_words, tokenizer)
     if args.fraction_of_data_to_use < 1.0:
         dataset = dataset.train_test_split(test_size=(1 - args.fraction_of_data_to_use), seed=seed)['train']
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
@@ -153,17 +154,19 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                             temperature=args.temperature, 
                             eos_token_id=tokenizer.eos_token_id,
                             pad_token_id=tokenizer.eos_token_id,
-                            stopping_criteria=StoppingCriteriaList([stop_criteria]),
+                            # stopping_criteria=StoppingCriteriaList([stop_criteria]),
                             output_hidden_states = True, return_dict_in_generate=True, output_scores=True
                             )
 
             generation = dict_outputs.sequences[:, input_length:].cpu()
             print(f"Generation shape: {generation.shape}")
-            num_tokens = get_num_tokens(generation, tokenizer)
+            
+            num_tokens = get_num_tokens(generation, tokenizer, language_type=args.language, stop_words=stop_words)
             for gen, num_token in zip(generation, num_tokens):
                 generations.append(gen[:num_token])
             for gen_ids in generations:
                 generations_decoded.append(tokenizer.decode(gen_ids, skip_special_tokens=True))
+            print(generations_decoded)
             hidden_states = dict_outputs.hidden_states
             if args.layer == -2:
                 layer_embeddings = getMiddleLayerEmbeddingEachToken(hidden_states, num_tokens)
@@ -217,7 +220,7 @@ def find_sublist(gen_tensor_ids, stop_word_ids):
     
     return first_index
 
-def mbpp_get_num_tokens(generation, tokenizer):
+def mbpp_get_num_tokens(generation, tokenizer, language_type='python', stop_words=["[DONE]"]):
     stop_words = ["[DONE]"]
     tokenizer_stop_words = [tokenizer.encode(_)[1:] for _ in stop_words] + [[tokenizer.eos_token_id]]
     num_tokens = []
@@ -230,8 +233,11 @@ def mbpp_get_num_tokens(generation, tokenizer):
         num_tokens.append(min_stop_idx)
     return num_tokens
 
-def humaneval_get_num_tokens(generation, tokenizer):
-    stop_words = ["\ndef", "\nclass", "\nif", "\n#", "\nprint"]
+def humaneval_get_num_tokens(generation, tokenizer, language_type='python', stop_words=[]):
+    if language_type == 'python':
+        stop_words = ["\ndef", "\nclass", "\nif", "\n#", "\nprint"]
+    elif language_type == 'ts':
+        stop_words = stop_words + ["\nexport", "\nimport", "\nexport default", "\nimport default", "\nconsole.log"]
     tokenizer_stop_words = [tokenizer.encode(_)[1:] for _ in stop_words] + [[tokenizer.eos_token_id]]
     num_tokens = []
     for ids in generation:
@@ -243,6 +249,46 @@ def humaneval_get_num_tokens(generation, tokenizer):
         num_tokens.append(min_stop_idx)
     return num_tokens
 
+def cleanup_code(
+    code: str,
+    language_type: str = None,
+    dataset: str = None,
+    issft: bool = False,
+    stop_words = []
+):
+    """
+    Cleans up the generated code.
+    """
+
+    if language_type.lower() == "python":
+        if issft:
+            code = _clean_python_code_for_sft(code)
+        stop_words = ["\ndef", "\nclass", "\nif", "\n#", "\nprint"]
+        code = _truncate_code_at_stopwords(code, stop_words)
+    elif language_type.lower() == "ts":
+        code = _truncate_code_at_stopwords(code, stop_words + ["\nexport", "\nimport", "\nexport default", "\nimport default", "\nconsole.log"])
+    else:
+        code = _truncate_code_at_stopwords(code, stop_words)
+
+    return code
+
+def _clean_python_code_for_sft(code):
+    code = code.replace("\r", "")
+    if "```python" in code:
+        code_start_idx = code.index("```python")
+        code = code[code_start_idx:].replace("```python", "").strip()
+        end_idx = code.find("```") if "```" in code else len(code)
+        code = code[:end_idx].strip()
+
+    return code
+
+def _truncate_code_at_stopwords(code, stop_words):
+    min_stop_idx = len(code)
+    for stop_word in stop_words:
+        stop_index = code.find(stop_word)
+        if 0 <= stop_index < min_stop_idx:
+            min_stop_idx = stop_index
+    return code[:min_stop_idx]
 
 def main(overwrite=False, continue_from=None, parallel:int=None):
     if continue_from:

@@ -9,9 +9,8 @@ from benchmark.MBPP.utils.dataset import MBPPDataset
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, StoppingCriteria, StoppingCriteriaList
 
-DATASET_ROOT="/drive2/tuandung/WCODELLM/benchmark/MBPP/data"
-LANGUAGE="python"
-
+import _settings
+DATASET_ROOT= os.path.join(_settings.DATA_FOLDER, "MBPP", "data")
 
 class KeywordsStoppingCriteria(StoppingCriteria):
     def __init__(self, keywords_str, tokenizer):

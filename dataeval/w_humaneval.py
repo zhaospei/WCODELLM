@@ -5,7 +5,8 @@ from datasets import Dataset
 
 from benchmark.HumanEval.utils.dataset import HumanEvalDataset
 
-DATASET_ROOT="/drive2/tuandung/WCODELLM/benchmark/HumanEval/data"
+import _settings
+DATASET_ROOT= os.path.join(_settings.DATA_FOLDER, "HumanEval", "data")
 # LANGUAGE="python"
 
 def _save_dataset(language, sft=False):

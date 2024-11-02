@@ -1,5 +1,5 @@
 #!/bin/bash
 #PBS -N DeepSeek-6.7BMBPP　
-cd $PBS_O_WORKDIR
+cd /home/trang-n/
 
 bash run.sh
