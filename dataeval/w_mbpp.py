@@ -77,7 +77,7 @@ def _save_dataset(tokenizer, max_seq_len, max_gen_len):
 
 # _save_dataset(sft=False)
 
-def get_dataset(tokenizer, max_seq_len=4096, max_gen_len=500):
+def get_dataset(tokenizer, language='python', max_seq_len=4096, max_gen_len=500):
     dataset = datasets.load_from_disk(_save_dataset(tokenizer, max_seq_len, max_gen_len))
     
     def encode_mbpp(example):
@@ -95,6 +95,9 @@ def get_dataset(tokenizer, max_seq_len=4096, max_gen_len=500):
 def _generate_config(tokenizer):
     stop_criteria = KeywordsStoppingCriteria(["[DONE]"], tokenizer)
     return dict(stopping_criteria=StoppingCriteriaList([stop_criteria]))
+
+def _stop_word_list(language):
+    return "[DONE]"
 
 def cleanup_code(
     code: str,

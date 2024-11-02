@@ -6,12 +6,12 @@ from datasets import Dataset
 from benchmark.HumanEval.utils.dataset import HumanEvalDataset
 
 DATASET_ROOT="/drive2/tuandung/WCODELLM/benchmark/HumanEval/data"
-LANGUAGE="python"
+# LANGUAGE="python"
 
-def _save_dataset(sft=False):
-    save_path = f"{DATASET_ROOT}/{LANGUAGE}" if not sft else f"{DATASET_ROOT}/{LANGUAGE}_sft"
+def _save_dataset(language, sft=False):
+    save_path = f"{DATASET_ROOT}/{language}" if not sft else f"{DATASET_ROOT}/{language}_sft"
     if not os.path.exists(save_path):
-        data = HumanEvalDataset(root=DATASET_ROOT, language=LANGUAGE, issft=sft)
+        data = HumanEvalDataset(root=DATASET_ROOT, language=language, issft=sft)
         dataset = {}
         dataset["prompt"] = []
         dataset["task_id"] = []
@@ -34,8 +34,8 @@ def _save_dataset(sft=False):
 
 # _save_dataset(sft=False)
 
-def get_dataset(tokenizer, sft=False):
-    dataset = datasets.load_from_disk(_save_dataset(sft))
+def get_dataset(tokenizer, language, sft=False):
+    dataset = datasets.load_from_disk(_save_dataset(language, sft))
 
     def encode_humaneval(example):
         prompt = example['prompt']

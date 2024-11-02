@@ -8,7 +8,7 @@ import time
 import pandas as pd
 import torch
 import tqdm
-import transformers
+from transformers import StoppingCriteria, StoppingCriteriaList
 from sentence_transformers import SentenceTransformer
 from torchmetrics.text.bert import BERTScore
 
@@ -37,12 +37,30 @@ parser.add_argument('--nprocess', type=int, default=None)
 parser.add_argument('--project_ind', type=int, default=0)
 parser.add_argument("--layer", default=-1, type=int,
                         help="List of layers of the LM to save embeddings from indexed negatively from the end")
-
+parser.add_argument("--language", default="python", type=str,)
+parser.add_argument("--load_in_8bit", action="store_true", help="Whether to load the model in 8bit mode")
 #-1: Last Layer, -2: Middle Layer, Others: Specific Layer
 
 args = parser.parse_args()
 print(args.model.replace('/', '_'))
-logInfo = open("./data/output/logInfo_{}_{}_{}.txt".format(args.model.replace('/', '_'), args.dataset, args.layer), mode="w",encoding="utf-8")
+ml_time = int(time.time() * 1000)
+OUTPUT_DIR = os.path.join(_settings.GENERATION_FOLDER, f'{ml_time}_{args.model.replace("/", "_")}_{args.dataset}_{args.language}_{args.layer}')
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+logInfo = open(os.path.join(OUTPUT_DIR, "logInfo.txt"), mode="w",encoding="utf-8")
+
+class KeywordsStoppingCriteria(StoppingCriteria):
+    def __init__(self, keywords_str, tokenizer):
+        StoppingCriteria.__init__(self)
+        self.current_context = []
+        self.tokenizer = tokenizer
+        self.keywords_str = keywords_str
+    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
+        self.current_context.append(input_ids[0][-1].item())
+        current_context = self.tokenizer.decode(self.current_context)
+        for word in self.keywords_str:
+            if word in current_context:
+                return True
+        return False
 
 # _UNUSED_TOKENIZER = models.load_tokenizer()
 def get_dataset_fn(data_name):
@@ -62,18 +80,24 @@ def get_num_tokens(generation, tokenizer):
         return mbpp_get_num_tokens(generation, tokenizer)
 
 
-def get_generation_config(tokenizer, data_name):
+# def get_generation_config(tokenizer, data_name):
+#     if data_name == 'human_eval':
+#         generation_config = human_eval._generate_config(tokenizer)
+#     if data_name == 'mbpp':
+#         generation_config = mbpp._generate_config(tokenizer)
+#     return generation_config
+
+def get_stop_words(data_name):
     if data_name == 'human_eval':
-        generation_config = human_eval._generate_config(tokenizer)
+        return ["\ndef", "\nclass", "\nif", "\n#", "\nprint"]
     if data_name == 'mbpp':
-        generation_config = mbpp._generate_config(tokenizer)
-    return generation_config
+        return ["[DONE]"]
 
 
 @torch.no_grad()
 def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_gen_once=args.num_generations_per_prompt):
     device = args.device
-    model, tokenizer = models.load_model_and_tokenizer(model_name, args.device)
+    model, tokenizer = models.load_model_and_tokenizer(model_name, args.device, args.load_in_8bit)
     # for name, param in model.named_parameters():
     #     print(f"Layer: {name} | Shape: {param.shape} | Parameters: {param.numel()}")
     # SenSimModel = SentenceTransformer('./data/weights/nli-roberta-large')
@@ -89,9 +113,11 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
     # tokenizer = llm.tokenizer
     
     utils.seed_everything(seed)
-    dataset = get_dataset_fn(args.dataset)(tokenizer)
+    dataset = get_dataset_fn(args.dataset)(tokenizer, language=args.language)
     cleanup_code = get_clean_up_code_fn(args.dataset)
-    generation_config = get_generation_config(tokenizer, args.dataset)
+    stop_words = get_stop_words(args.dataset)
+    
+    stop_criteria = KeywordsStoppingCriteria(stop_words, tokenizer)
     if args.fraction_of_data_to_use < 1.0:
         dataset = dataset.train_test_split(test_size=(1 - args.fraction_of_data_to_use), seed=seed)['train']
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
@@ -127,7 +153,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                             temperature=args.temperature, 
                             eos_token_id=tokenizer.eos_token_id,
                             pad_token_id=tokenizer.eos_token_id,
-                            # **generation_config,
+                            stopping_criteria=StoppingCriteriaList([stop_criteria]),
                             output_hidden_states = True, return_dict_in_generate=True, output_scores=True
                             )
 
@@ -231,15 +257,15 @@ def main(overwrite=False, continue_from=None, parallel:int=None):
         model_name = args.model
         # if '/' in model_name:
         #     model_name = model_name.replace('/', '_')
-        cache_dir = os.path.join(_settings.GENERATION_FOLDER, f'{model_name}_{args.dataset}_{args.project_ind}')
-        os.makedirs(cache_dir, exist_ok=True)
-        old_results = glob.glob(os.path.join(cache_dir, '*.pkl'))
+        # cache_dir = os.path.join(_settings.GENERATION_FOLDER, f'{model_name}_{args.dataset}_{args.project_ind}')
+        # os.makedirs(cache_dir, exist_ok=True)
+        old_results = glob.glob(os.path.join(OUTPUT_DIR, '*.pkl'))
         old_results = [_ for _ in old_results if '_partial' not in _]
         # if len(old_results) > 0 and not overwrite:
         #     print(f'Found {len(old_results)} generations in {cache_dir}.')
         #     return
         run_id = len(old_results)
-        with open(os.path.join(cache_dir, f'args{run_id}.json'), 'w') as f:
+        with open(os.path.join(OUTPUT_DIR, f'args{run_id}.json'), 'w') as f:
             json.dump(args.__dict__, f)
     print(f'Generating {args.num_generations_per_prompt} generations per prompt for {model_name} on {args.dataset}...')
     print(f"Saving to {os.path.join(cache_dir, f'{run_id}.pkl')}")
