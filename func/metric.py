@@ -5,7 +5,7 @@ from sklearn.covariance import MinCovDet
 from rouge_score import rouge_scorer
 from sentence_transformers import util
 import heapq
-from selfcheckgpt.modeling_selfcheck import SelfCheckBERTScore
+# from selfcheckgpt.modeling_selfcheck import SelfCheckBERTScore
 
 ###### 导入ROUGE评估函数计算ROUGE-L指标
 rougeEvaluator = rouge_scorer.RougeScorer(["rouge1", "rouge2", "rougeL"], use_stemmer=True)

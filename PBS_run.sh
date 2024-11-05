@@ -1,5 +1,4 @@
 #!/bin/bash
-#PBS -N DeepSeek-6.7BMBPP　
-cd /home/trang-n/
+cd /home/trang-n/WCODELLM_MULTILANGUAGE
 
 bash run.sh

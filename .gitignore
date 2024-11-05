@@ -57,3 +57,5 @@ tmp/*
 *.parquet
 
 *.ipynb
+output/
+PBS_run.sh.*
