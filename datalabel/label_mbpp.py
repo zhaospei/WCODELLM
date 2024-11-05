@@ -10,7 +10,7 @@ import os
 from benchmark.MBPP.human_eval.evaluation import evaluate_functional_correctness_each_sample
 
 data_root = "/drive2/tuandung/WCODELLM/benchmark/MBPP/data"
-continue_from = '/drive2/tuandung/WCODELLM/mbpp_result/deepseek-ai_deepseek-coder-1.3b-base_mbpp_0_-1_0.pkl'
+continue_from = '/drive2/tuandung/WCODELLM/mbpp_result/java-1/0.pkl'
 kwargs_handlers = [DistributedDataParallelKwargs(find_unused_parameters=True)]
 accelerator = Accelerator(mixed_precision="bf16", kwargs_handlers=kwargs_handlers)
 model_name = 'deepseek-ai/deepseek-coder-1.3b-base'
@@ -19,7 +19,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 sequences = pd.read_pickle(continue_from)
 print(f'Loaded {len(sequences)} indices')
 batch_size = 2
-language = 'python'
+language = 'java'
 log_dir = 'tmp/'
 
 test_run_results = []
@@ -35,7 +35,9 @@ for idx in tqdm(range(0, len(sequences), batch_size)):
         for j in range(len(sequence['generations_ids'])):
             indices = sequence['generations_ids'][j]
             suffixprediction = tokenizer.decode(indices, skip_special_tokens=True)
-            task_id = sequence['id'].numpy().tolist()
+            print(sequence['id'])
+            # task_id = sequence['id'].numpy().tolist()
+            task_id = sequence['id']
             completion_id = str(task_id) + '_' + str(j)
             res = {"task_id": task_id, "generation": suffixprediction, "completion_id": completion_id}
             batch_lines.append(res)
