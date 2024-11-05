@@ -34,7 +34,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--model",
     type=str,
-    default="codex002",
+    default="deepseek-ai/deepseek-coder-1.3b-base",
     help="which results to run",
 )
 args = parser.parse_args()
@@ -63,8 +63,10 @@ prompts = [p["prompt"] for p in ds1000]
 # specifically for id 156, too long, > 2048 tokens
 prompts[156] = "write a hello world in python"
 
+prompts = prompts[:5]
+
 # You can change the batch size depending on your GPU RAM
-batch_size = 2
+batch_size = 1
 # We set it to 8 since it is better for some hardware. More information here
 # https://github.com/huggingface/tokenizers/issues/991
 pad_to_multiple_of = 8
@@ -123,8 +125,8 @@ completions_gather = gather_object(completions_per_process)
 # Drop duplicates produced by apply_padding in split_between_processes
 completions = completions_gather[: len(prompts)]
 
-completions[156] = completions[-1]
-completions.pop(-1)
+# completions[156] = completions[-1]
+# completions.pop(-1)
 
 distributed_state.print(completions)
 
