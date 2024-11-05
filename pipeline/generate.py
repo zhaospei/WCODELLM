@@ -15,6 +15,7 @@ from torchmetrics.text.bert import BERTScore
 import _settings
 import dataeval.w_humaneval as human_eval
 import dataeval.w_mbpp as mbpp
+import dataeval.w_ds1000 as ds1000
 from dataeval.w_humaneval import cleanup_code as human_eval_cleanup_code
 import models
 import utils
@@ -35,16 +36,16 @@ parser.add_argument('--top_k', type=int, default=10)
 parser.add_argument('--seed', type=int, default=2023)
 parser.add_argument('--nprocess', type=int, default=None)
 parser.add_argument('--project_ind', type=int, default=0)
-parser.add_argument("--layer", default=-1, type=int,
+parser.add_argument("--layers", default=-1, nargs='*', type=int,
                         help="List of layers of the LM to save embeddings from indexed negatively from the end")
 parser.add_argument("--language", default="python", type=str,)
 parser.add_argument("--load_in_8bit", action="store_true", help="Whether to load the model in 8bit mode")
 #-1: Last Layer, -2: Middle Layer, Others: Specific Layer
-
 args = parser.parse_args()
 print(args.model.replace('/', '_'))
 ml_time = int(time.time() * 1000)
-OUTPUT_DIR = os.path.join(_settings.GENERATION_FOLDER, f'{ml_time}_{args.model.replace("/", "_")}_{args.dataset}_{args.language}_{args.layer}')
+layer_name = '_'.join(str(x) for x in args.layers)
+OUTPUT_DIR = os.path.join(_settings.GENERATION_FOLDER, f'{ml_time}_{args.model.replace("/", "_")}_{args.dataset}_{args.language}_{layer_name}')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 logInfo = open(os.path.join(OUTPUT_DIR, "logInfo.txt"), mode="w",encoding="utf-8")
 
@@ -68,6 +69,8 @@ def get_dataset_fn(data_name):
         return human_eval.get_dataset
     if data_name == 'mbpp':
         return mbpp.get_dataset
+    if data_name == 'ds1000':
+        return ds1000.get_dataset
 
 def get_clean_up_code_fn(data_name):
     if data_name == 'human_eval':
@@ -78,6 +81,8 @@ def get_num_tokens(generation, tokenizer, language_type='python', stop_words=[])
         return humaneval_get_num_tokens(generation, tokenizer, language_type, stop_words)
     if args.dataset == 'mbpp':
         return mbpp_get_num_tokens(generation, tokenizer)
+    if args.dataset == 'ds1000':
+        return ds1000_get_num_tokens(generation, tokenizer)
 
 
 # def get_generation_config(tokenizer, data_name):
@@ -168,10 +173,18 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                 generations_decoded.append(tokenizer.decode(gen_ids, skip_special_tokens=True))
             print(generations_decoded)
             hidden_states = dict_outputs.hidden_states
-            if args.layer == -2:
-                layer_embeddings = getMiddleLayerEmbeddingEachToken(hidden_states, num_tokens)
-            else:
-                layer_embeddings = getLayerEmbeddingEachToken(hidden_states, num_tokens, args.layer)
+            layers = args.layers
+            layer_embeddings = {}
+            for layer in layers:
+                if layer == -2:
+                    layer_embeddings[layer] = getMiddleLayerEmbeddingEachToken(hidden_states, num_tokens)
+                else:
+                    layer_embeddings[layer] = getLayerEmbeddingEachToken(hidden_states, num_tokens, layer)
+                # layer_embeddings = getLayerEmbeddingEachToken(hidden_states, num_tokens, layer)
+            # if args.layer == -2:
+            #     layer_embeddings = getMiddleLayerEmbeddingEachToken(hidden_states, num_tokens)
+            # else:
+            #     layer_embeddings = getLayerEmbeddingEachToken(hidden_states, num_tokens, args.layer)
             num_gens -= len(generation)
             
 
@@ -219,6 +232,19 @@ def find_sublist(gen_tensor_ids, stop_word_ids):
         first_index = torch.where(matches)[0][0].item() if matches.any() else -1
     
     return first_index
+
+def ds1000_get_num_tokens(generation, tokenizer, language_type='python', stop_words=[]):
+    stop_words = stop_words + ["</code>", "# SOLUTION END", "\nEND SOLUTION", ]
+    tokenizer_stop_words = [tokenizer.encode(_)[1:] for _ in stop_words] + [[tokenizer.eos_token_id]]
+    num_tokens = []
+    for ids in generation:
+        min_stop_idx = len(ids)
+        for stop_word in tokenizer_stop_words:
+            stop_index = find_sublist(ids, stop_word)
+            if 0 <= stop_index < min_stop_idx:
+                min_stop_idx = stop_index
+        num_tokens.append(min_stop_idx)
+    return num_tokens
 
 def mbpp_get_num_tokens(generation, tokenizer, language_type='python', stop_words=["[DONE]"]):
     stop_words = ["[DONE]"]
