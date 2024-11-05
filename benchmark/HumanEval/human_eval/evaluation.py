@@ -137,16 +137,16 @@ def process_humaneval_test(sample, problems, example_test=False, is_mbpp=False, 
         for s in IMPORT_HELPER["cpp"]:
             if s not in prompt:
                 test_set_up += s + "\n"
-        test_string = test_set_up + "\n" + code + "\n" + test
+        test_string = test_set_up + prompt + "\n" + code + "\n" + test
     elif language == "java":
-        test_string = code + "\n" + test
+        test_string = prompt + "\n" + code + "\n" + test
     elif language == "cs":
         test_set_up = ""
         for s in IMPORT_HELPER["cs"]:
             test_set_up += s + "\n"
         test_string = test_set_up + "\n" + code + "\n" + test
     elif language in ["js", "javascript", "ts", "sh", "go"]:
-        test_string = code + "\n" + test
+        test_string = prompt + "\n" + code + "\n" + test
     elif language == "go232":
         import_string = problems[task_id]["import"]
         prompt = prompt.replace(import_string, "")
@@ -166,10 +166,11 @@ def process_humaneval_test(sample, problems, example_test=False, is_mbpp=False, 
             test_string = test_setup + "\n" + import_other_pkgs + "\n" + prompt + code + "\n" + test
         else:
             test_string = test_setup + "\n" + prompt + code + "\n" + test
-    elif language == "rust":
+    elif language == "rs":
         main = "\nfn main(){ \n } \n"
-        declaration = problems[task_id]["declaration"]
-        test_string = main + declaration + prompt + code + test
+        # declaration = problems[task_id]["declaration"]
+        # test_string = main + declaration + prompt + code + test
+        test_string =  prompt + code + test
     elif language == "php":
         if code[:5] != "<?php":
             code = "<?php\n" + code
@@ -316,6 +317,7 @@ def evaluate_functional_correctness_each_sample(
 
     problems = read_dataset(problem_file,
                             dataset_type="humaneval")
+    # print(problems)
     sample_jsonl = stream_jsonl_all(input_file)
 
 

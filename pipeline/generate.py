@@ -44,6 +44,7 @@ parser.add_argument("--load_in_8bit", action="store_true", help="Whether to load
 args = parser.parse_args()
 print(args.model.replace('/', '_'))
 ml_time = int(time.time() * 1000)
+layer_name = '_'.join(str(x) for x in args.layers)
 OUTPUT_DIR = os.path.join(_settings.GENERATION_FOLDER, f'{ml_time}_{args.model.replace("/", "_")}_{args.dataset}_{args.language}_{args.layer}')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 logInfo = open(os.path.join(OUTPUT_DIR, "logInfo.txt"), mode="w",encoding="utf-8")

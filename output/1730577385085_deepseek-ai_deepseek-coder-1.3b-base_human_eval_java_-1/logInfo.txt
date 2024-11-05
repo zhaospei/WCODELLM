@@ -1,0 +1,846 @@
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Return length of given string
+    // >>> stringLength((""))
+    // (0l)
+    // >>> stringLength(("abc"))
+    // (3l)
+    public static long strlen(String string) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Return length of given string
+    // >>> stringLength((""))
+    // (0l)
+    // >>> stringLength(("abc"))
+    // (3l)
+    public static long strlen(String string) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        return string.length();
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Create a function encrypt that takes a string as an argument and
+    // returns a string encrypted with the alphabet being rotated. 
+    // The alphabet should be rotated in a manner such that the letters 
+    // shift down by two multiplied to two places.
+    // For example:
+    // >>> encrypt(("hi"))
+    // ("lm")
+    // >>> encrypt(("asdfghjkl"))
+    // ("ewhjklnop")
+    // >>> encrypt(("gf"))
+    // ("kj")
+    // >>> encrypt(("et"))
+    // ("ix")
+    public static String encrypt(String s) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Create a function encrypt that takes a string as an argument and
+    // returns a string encrypted with the alphabet being rotated. 
+    // The alphabet should be rotated in a manner such that the letters 
+    // shift down by two multiplied to two places.
+    // For example:
+    // >>> encrypt(("hi"))
+    // ("lm")
+    // >>> encrypt(("asdfghjkl"))
+    // ("ewhjklnop")
+    // >>> encrypt(("gf"))
+    // ("kj")
+    // >>> encrypt(("et"))
+    // ("ix")
+    public static String encrypt(String s) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        // Create an array of characters
+        char[] alphabet = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'};
+
+        // Create a StringBuilder to store the encrypted string
+        StringBuilder encrypted = new StringBuilder();
+
+        // Loop through each character in the input string
+        for (int i = 0; i < s.length(); i++) {
+            // Get the character at the current index
+            char c = s.charAt(i);
+
+            // If the character is not a letter, skip it
+            if (Character.isLetter(c)) {
+                // Get the index of the character in the alphabet
+                int index = Arrays.binarySearch(alphabet, Character.toLowerCase(c));
+                // If the index is negative, it means the character is not in the alphabet
+                if (index < 0) {
+                    // Skip the character
+                    continue;
+                }
+                // Otherwise, the character is in the alphabet
+                // Get the index of the character in the alphabet
+                int newIndex = (index + 2) % 26;
+                // Get the new character by adding 2 to the index
+                char newChar = alphabet[newIndex];
+                // Add the new character to the encrypted string
+                encrypted.append(Character.toLowerCase(newChar));
+            } else {
+                // If the character is not a letter, skip it
+                // Add the character to the encrypted string
+                encrypted.append(c);
+            }
+        }
+
+        // Return the encrypted string
+        return encrypted.toString();
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Given a hash map, return true if all keys are strings in lower 
+    // case or all keys are strings in upper case, else return false.
+    // The function should return false is the given hash map is empty.
+    // Examples:
+    // >>> checkDictCase((new HashMap<String,String>(Map.of("a", "apple", "b", "banana"))))
+    // (true)
+    // >>> checkDictCase((new HashMap<String,String>(Map.of("a", "apple", "A", "banana", "B", "banana"))))
+    // (false)
+    // >>> checkDictCase((new HashMap<String,String>(Map.of("a", "apple", 8l, "banana", "a", "apple"))))
+    // (false)
+    // >>> checkDictCase((new HashMap<String,String>(Map.of("Name", "John", "Age", "36", "City", "Houston"))))
+    // (false)
+    // >>> checkDictCase((new HashMap<String,String>(Map.of("STATE", "NC", "ZIP", "12345"))))
+    // (true)
+    public static boolean checkDictCase(HashMap<String,String> dict) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Given a hash map, return true if all keys are strings in lower 
+    // case or all keys are strings in upper case, else return false.
+    // The function should return false is the given hash map is empty.
+    // Examples:
+    // >>> checkDictCase((new HashMap<String,String>(Map.of("a", "apple", "b", "banana"))))
+    // (true)
+    // >>> checkDictCase((new HashMap<String,String>(Map.of("a", "apple", "A", "banana", "B", "banana"))))
+    // (false)
+    // >>> checkDictCase((new HashMap<String,String>(Map.of("a", "apple", 8l, "banana", "a", "apple"))))
+    // (false)
+    // >>> checkDictCase((new HashMap<String,String>(Map.of("Name", "John", "Age", "36", "City", "Houston"))))
+    // (false)
+    // >>> checkDictCase((new HashMap<String,String>(Map.of("STATE", "NC", "ZIP", "12345"))))
+    // (true)
+    public static boolean checkDictCase(HashMap<String,String> dict) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        if (dict.isEmpty()) {
+            return false;
+        }
+        boolean isLowerCase = true;
+        boolean isUpperCase = true;
+        for (String key : dict.keySet()) {
+            String value = dict.get(key);
+            if (!Character.isLowerCase(value.charAt(0))) {
+                isLowerCase = false;
+            }
+            if (!Character.isUpperCase(value.charAt(0))) {
+                isUpperCase = false;
+            }
+        }
+        return isLowerCase || isUpperCase;
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Given a non-empty array list of integers lst. add the even elements that are at odd indices..
+    // Examples:
+    // >>> add((new ArrayList<Long>(Arrays.asList((long)4l, (long)2l, (long)6l, (long)7l))))
+    // (2l)
+    public static long add(ArrayList<Long> lst) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Given a non-empty array list of integers lst. add the even elements that are at odd indices..
+    // Examples:
+    // >>> add((new ArrayList<Long>(Arrays.asList((long)4l, (long)2l, (long)6l, (long)7l))))
+    // (2l)
+    public static long add(ArrayList<Long> lst) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        ArrayList<Long> newLst = new ArrayList<Long>();
+        for(int i = 0; i < lst.size(); i++) {
+            if(i % 2 == 0) {
+                newLst.add(lst.get(i));
+            }
+        }
+        long sum = 0;
+        for(int i = 0; i < newLst.size(); i++) {
+            sum += newLst.get(i);
+        }
+        return sum;
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Given a string text, replace all spaces in it with underscores, 
+    // and if a string has more than 2 consecutive spaces, 
+    // then replace all consecutive spaces with - 
+    // >>> fixSpaces((" Example"))
+    // ("Example")
+    // >>> fixSpaces((" Example 1"))
+    // ("Example_1")
+    // >>> fixSpaces((" Example 2"))
+    // ("_Example_2")
+    // >>> fixSpaces((" Example 3"))
+    // ("_Example-3")
+    public static String fixSpaces(String text) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Given a string text, replace all spaces in it with underscores, 
+    // and if a string has more than 2 consecutive spaces, 
+    // then replace all consecutive spaces with - 
+    // >>> fixSpaces((" Example"))
+    // ("Example")
+    // >>> fixSpaces((" Example 1"))
+    // ("Example_1")
+    // >>> fixSpaces((" Example 2"))
+    // ("_Example_2")
+    // >>> fixSpaces((" Example 3"))
+    // ("_Example-3")
+    public static String fixSpaces(String text) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        if (text == null || text.length() == 0) {
+            return text;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) == ' ') {
+                if (i + 1 < text.length() && text.charAt(i + 1) == ' ') {
+                    sb.append("_");
+                    i++;
+                } else {
+                    sb.append("_");
+                }
+            } else {
+                sb.append(text.charAt(i));
+            }
+        }
+        return sb.toString();
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // The FibFib number sequence is a sequence similar to the Fibbonacci sequnece that's defined as follows:
+    // fibfib(0) == 0
+    // fibfib(1) == 0
+    // fibfib(2) == 1
+    // fibfib(n) == fibfib(n-1) + fibfib(n-2) + fibfib(n-3).
+    // Please write a function to efficiently compute the n-th element of the fibfib number sequence.
+    // >>> fibfib((1l))
+    // (0l)
+    // >>> fibfib((5l))
+    // (4l)
+    // >>> fibfib((8l))
+    // (24l)
+    public static long fibfib(long n) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // The FibFib number sequence is a sequence similar to the Fibbonacci sequnece that's defined as follows:
+    // fibfib(0) == 0
+    // fibfib(1) == 0
+    // fibfib(2) == 1
+    // fibfib(n) == fibfib(n-1) + fibfib(n-2) + fibfib(n-3).
+    // Please write a function to efficiently compute the n-th element of the fibfib number sequence.
+    // >>> fibfib((1l))
+    // (0l)
+    // >>> fibfib((5l))
+    // (4l)
+    // >>> fibfib((8l))
+    // (24l)
+    public static long fibfib(long n) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        long[] fib = new long[n + 1];
+        fib[0] = 0;
+        fib[1] = 0;
+        fib[2] = 1;
+        for (long i = 3; i <= n; i++) {
+            fib[(int)i] = fib[(int)i - 1] + fib[(int)i - 2] + fib[(int)i - 3];
+        }
+        return fib[(int)n];
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Given an array array list of numbers, return the sum of squares of the numbers
+    // in the array list that are odd. Ignore numbers that are negative or not integers.
+    // >>> doubleTheDifference((new ArrayList<Float>(Arrays.asList((long)1l, (long)3l, (long)2l, (long)0l))))
+    // (10l)
+    // >>> doubleTheDifference((new ArrayList<Float>(Arrays.asList((long)-1l, (long)-2l, (long)0l))))
+    // (0l)
+    // >>> doubleTheDifference((new ArrayList<Float>(Arrays.asList((long)9l, (long)-2l))))
+    // (81l)
+    // >>> doubleTheDifference((new ArrayList<Float>(Arrays.asList((long)0l))))
+    // (0l)
+    // If the input array list is empty, return 0.
+    public static long doubleTheDifference(ArrayList<Float> lst) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Given an array array list of numbers, return the sum of squares of the numbers
+    // in the array list that are odd. Ignore numbers that are negative or not integers.
+    // >>> doubleTheDifference((new ArrayList<Float>(Arrays.asList((long)1l, (long)3l, (long)2l, (long)0l))))
+    // (10l)
+    // >>> doubleTheDifference((new ArrayList<Float>(Arrays.asList((long)-1l, (long)-2l, (long)0l))))
+    // (0l)
+    // >>> doubleTheDifference((new ArrayList<Float>(Arrays.asList((long)9l, (long)-2l))))
+    // (81l)
+    // >>> doubleTheDifference((new ArrayList<Float>(Arrays.asList((long)0l))))
+    // (0l)
+    // If the input array list is empty, return 0.
+    public static long doubleTheDifference(ArrayList<Float> lst) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        long sum = 0;
+        for (float f : lst) {
+            if (f > 0 && f % 2 != 0) {
+                sum += (f * f);
+            }
+        }
+        return sum;
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Filter given array list of any javathon values only for integers
+    // >>> filterIntegers((new ArrayList<Object>(Arrays.asList((String)"a", (String)3.14f, (String)5l))))
+    // (new ArrayList<Long>(Arrays.asList((long)5l)))
+    // >>> filterIntegers((new ArrayList<Object>(Arrays.asList(1l, 2l, 3l, "abc", new HashMap<Long,Long>(Map.of()), new ArrayList<Long>(Arrays.asList())))))
+    // (new ArrayList<Long>(Arrays.asList((long)1l, (long)2l, (long)3l)))
+    public static ArrayList<Long> filterIntegers(ArrayList<Object> values) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Filter given array list of any javathon values only for integers
+    // >>> filterIntegers((new ArrayList<Object>(Arrays.asList((String)"a", (String)3.14f, (String)5l))))
+    // (new ArrayList<Long>(Arrays.asList((long)5l)))
+    // >>> filterIntegers((new ArrayList<Object>(Arrays.asList(1l, 2l, 3l, "abc", new HashMap<Long,Long>(Map.of()), new ArrayList<Long>(Arrays.asList())))))
+    // (new ArrayList<Long>(Arrays.asList((long)1l, (long)2l, (long)3l)))
+    public static ArrayList<Long> filterIntegers(ArrayList<Object> values) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        return values.stream().filter(x -> x instanceof Long).map(x -> (Long)x).collect(Collectors.toCollection(ArrayList::new));
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Imagine a road that's a perfectly straight infinitely long line.
+    // n cars are driving left to right;  simultaneously, a different set of n cars
+    // are driving right to left.   The two sets of cars start out being very far from
+    // each other.  All cars move in the same speed.  Two cars are said to collide
+    // when a car that's moving left to right hits a car that's moving right to left.
+    // However, the cars are infinitely sturdy and strong; as a result, they continue moving
+    // in their trajectory as if they did not collide.
+    // This function outputs the number of such collisions.
+    public static long carRaceCollision(long n) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Imagine a road that's a perfectly straight infinitely long line.
+    // n cars are driving left to right;  simultaneously, a different set of n cars
+    // are driving right to left.   The two sets of cars start out being very far from
+    // each other.  All cars move in the same speed.  Two cars are said to collide
+    // when a car that's moving left to right hits a car that's moving right to left.
+    // However, the cars are infinitely sturdy and strong; as a result, they continue moving
+    // in their trajectory as if they did not collide.
+    // This function outputs the number of such collisions.
+    public static long carRaceCollision(long n) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        long ans = 0;
+        for(int i=0; i<n; i++){
+            ans += (n-i)*i;
+        }
+        return ans;
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Input to this function is a string representing musical notes in a special ASCII format.
+    // Your task is to parse this string and return array list of integers corresponding to how many beats does each
+    // not last.
+    // Here is a legend:
+    // 'o' - whole note, lasts four beats
+    // 'o|' - half note, lasts two beats
+    // '.|' - quater note, lasts one beat
+    // >>> parseMusic(("o o| .| o| o| .| .| .| .| o o"))
+    // (new ArrayList<Long>(Arrays.asList((long)4l, (long)2l, (long)1l, (long)2l, (long)2l, (long)1l, (long)1l, (long)1l, (long)1l, (long)4l, (long)4l)))
+    public static ArrayList<Long> parseMusic(String music_string) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Input to this function is a string representing musical notes in a special ASCII format.
+    // Your task is to parse this string and return array list of integers corresponding to how many beats does each
+    // not last.
+    // Here is a legend:
+    // 'o' - whole note, lasts four beats
+    // 'o|' - half note, lasts two beats
+    // '.|' - quater note, lasts one beat
+    // >>> parseMusic(("o o| .| o| o| .| .| .| .| o o"))
+    // (new ArrayList<Long>(Arrays.asList((long)4l, (long)2l, (long)1l, (long)2l, (long)2l, (long)1l, (long)1l, (long)1l, (long)1l, (long)4l, (long)4l)))
+    public static ArrayList<Long> parseMusic(String music_string) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        ArrayList<Long> beats = new ArrayList<>();
+        int last_note = 0;
+        for (char c : music_string.toCharArray()) {
+            if (c == 'o') {
+                beats.add((long)4);
+                last_note = 4;
+            } else if (c == 'o' || c == '|') {
+                beats.add((long)2);
+                last_note = 2;
+            } else if (c == '.' || c == '|') {
+                beats.add((long)1);
+                last_note = 1;
+            } else if (c == '>') {
+                beats.add((long)0);
+                last_note = 0;
+            } else {
+                beats.add((long)0);
+                last_note = 0;
+            }
+        }
+        return beats;
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // You will be given a number in decimal form and your task is to convert it to
+    // binary format. The function should return a string, with each character representing a binary
+    // number. Each character in the string will be '0' or '1'.
+    // There will be an extra couple of characters 'db' at the beginning and at the end of the string.
+    // The extra characters are there to help with the format.
+    // Examples:
+    // >>> decimalToBinary((15l))
+    // ("db1111db")
+    // >>> decimalToBinary((32l))
+    // ("db100000db")
+    public static String decimalToBinary(long decimal) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // You will be given a number in decimal form and your task is to convert it to
+    // binary format. The function should return a string, with each character representing a binary
+    // number. Each character in the string will be '0' or '1'.
+    // There will be an extra couple of characters 'db' at the beginning and at the end of the string.
+    // The extra characters are there to help with the format.
+    // Examples:
+    // >>> decimalToBinary((15l))
+    // ("db1111db")
+    // >>> decimalToBinary((32l))
+    // ("db100000db")
+    public static String decimalToBinary(long decimal) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        StringBuilder sb = new StringBuilder();
+        while (decimal > 0) {
+            sb.append(decimal % 2);
+            decimal = decimal / 2;
+        }
+        while (sb.length() < 32) {
+            sb.append('0');
+        }
+        return "db" + sb.reverse().toString() + "db";
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Return array list of all prefixes from shortest to longest of the input string
+    // >>> allPrefixes(("abc"))
+    // (new ArrayList<String>(Arrays.asList((String)"a", (String)"ab", (String)"abc")))
+    public static ArrayList<String> allPrefixes(String string) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Return array list of all prefixes from shortest to longest of the input string
+    // >>> allPrefixes(("abc"))
+    // (new ArrayList<String>(Arrays.asList((String)"a", (String)"ab", (String)"abc")))
+    public static ArrayList<String> allPrefixes(String string) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        return new ArrayList<String>(Arrays.asList("a", "ab", "abc"));
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Add two numbers x and y
+    // >>> add((2l), (3l))
+    // (5l)
+    // >>> add((5l), (7l))
+    // (12l)
+    public static long add(long x, long y) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // Add two numbers x and y
+    // >>> add((2l), (3l))
+    // (5l)
+    // >>> add((5l), (7l))
+    // (12l)
+    public static long add(long x, long y) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        return x + y;
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // You're a hungry rabbit, and you already have eaten a certain number of carrots,
+    // but now you need to eat more carrots to complete the day's meals.
+    // you should return an array array list of [ total number of eaten carrots after your meals,
+    // the number of carrots left after your meals ]
+    // if there are not enough remaining carrots, you will eat all remaining carrots, but will still be hungry.
+    // Example:
+    // >>> eat((5l), (6l), (10l))
+    // (new ArrayList<Long>(Arrays.asList((long)11l, (long)4l)))
+    // >>> eat((4l), (8l), (9l))
+    // (new ArrayList<Long>(Arrays.asList((long)12l, (long)1l)))
+    // >>> eat((1l), (10l), (10l))
+    // (new ArrayList<Long>(Arrays.asList((long)11l, (long)0l)))
+    // >>> eat((2l), (11l), (5l))
+    // (new ArrayList<Long>(Arrays.asList((long)7l, (long)0l)))
+    // Variables:
+    // @number : integer
+    // the number of carrots that you have eaten.
+    // @need : integer
+    // the number of carrots that you need to eat.
+    // @remaining : integer
+    // the number of remaining carrots thet exist in stock
+    // Constrain:
+    // * 0 <= number <= 1000
+    // * 0 <= need <= 1000
+    // * 0 <= remaining <= 1000
+    // Have fun :)
+    public static ArrayList<Long> eat(long number, long need, long remaining) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // You're a hungry rabbit, and you already have eaten a certain number of carrots,
+    // but now you need to eat more carrots to complete the day's meals.
+    // you should return an array array list of [ total number of eaten carrots after your meals,
+    // the number of carrots left after your meals ]
+    // if there are not enough remaining carrots, you will eat all remaining carrots, but will still be hungry.
+    // Example:
+    // >>> eat((5l), (6l), (10l))
+    // (new ArrayList<Long>(Arrays.asList((long)11l, (long)4l)))
+    // >>> eat((4l), (8l), (9l))
+    // (new ArrayList<Long>(Arrays.asList((long)12l, (long)1l)))
+    // >>> eat((1l), (10l), (10l))
+    // (new ArrayList<Long>(Arrays.asList((long)11l, (long)0l)))
+    // >>> eat((2l), (11l), (5l))
+    // (new ArrayList<Long>(Arrays.asList((long)7l, (long)0l)))
+    // Variables:
+    // @number : integer
+    // the number of carrots that you have eaten.
+    // @need : integer
+    // the number of carrots that you need to eat.
+    // @remaining : integer
+    // the number of remaining carrots thet exist in stock
+    // Constrain:
+    // * 0 <= number <= 1000
+    // * 0 <= need <= 1000
+    // * 0 <= remaining <= 1000
+    // Have fun :)
+    public static ArrayList<Long> eat(long number, long need, long remaining) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        // Your code here
+        long total = number + remaining;
+        long eat = total - need;
+        long left = remaining - eat;
+        ArrayList<Long> result = new ArrayList<Long>(Arrays.asList(eat, left));
+        return result;
+
+ 
+ 
+
+Prompt: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // You are given a rectangular grid of wells. Each row represents a single well,
+    // and each 1 in a row represents a single unit of water.
+    // Each well has a corresponding bucket that can be used to extract water from it, 
+    // and all buckets have the same capacity.
+    // Your task is to use the buckets to empty the wells.
+    // Output the number of times you need to lower the buckets.
+    // Example 1:
+    // >>> maxFill((new ArrayList<ArrayList<Long>>(Arrays.asList((ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)0l, (long)1l, (long)0l)), (ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)1l, (long)0l, (long)0l)), (ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)1l, (long)1l, (long)1l, (long)1l))))), (1l))
+    // (6l)
+    // Example 2:
+    // >>> maxFill((new ArrayList<ArrayList<Long>>(Arrays.asList((ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)0l, (long)1l, (long)1l)), (ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)0l, (long)0l, (long)0l)), (ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)1l, (long)1l, (long)1l, (long)1l)), (ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)1l, (long)1l, (long)1l))))), (2l))
+    // (5l)
+    // Example 3:
+    // >>> maxFill((new ArrayList<ArrayList<Long>>(Arrays.asList((ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)0l, (long)0l)), (ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)0l, (long)0l))))), (5l))
+    // (0l)
+    // Constraints:
+    // * all wells have the same length
+    // * 1 <= grid.length <= 10^2
+    // * 1 <= grid[:,1].length <= 10^2
+    // * grid[i][j] -> 0 | 1
+    // * 1 <= capacity <= 10
+    public static long maxFill(ArrayList<ArrayList<Long>> grid, long capacity) {
+Problem: import java.util.*;
+import java.lang.reflect.*;
+import org.javatuples.*;
+import java.security.*;
+import java.math.*;
+import java.io.*;
+import java.util.stream.*;
+class Problem {
+    // You are given a rectangular grid of wells. Each row represents a single well,
+    // and each 1 in a row represents a single unit of water.
+    // Each well has a corresponding bucket that can be used to extract water from it, 
+    // and all buckets have the same capacity.
+    // Your task is to use the buckets to empty the wells.
+    // Output the number of times you need to lower the buckets.
+    // Example 1:
+    // >>> maxFill((new ArrayList<ArrayList<Long>>(Arrays.asList((ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)0l, (long)1l, (long)0l)), (ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)1l, (long)0l, (long)0l)), (ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)1l, (long)1l, (long)1l, (long)1l))))), (1l))
+    // (6l)
+    // Example 2:
+    // >>> maxFill((new ArrayList<ArrayList<Long>>(Arrays.asList((ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)0l, (long)1l, (long)1l)), (ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)0l, (long)0l, (long)0l)), (ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)1l, (long)1l, (long)1l, (long)1l)), (ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)1l, (long)1l, (long)1l))))), (2l))
+    // (5l)
+    // Example 3:
+    // >>> maxFill((new ArrayList<ArrayList<Long>>(Arrays.asList((ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)0l, (long)0l)), (ArrayList<Long>)new ArrayList<Long>(Arrays.asList((long)0l, (long)0l, (long)0l))))), (5l))
+    // (0l)
+    // Constraints:
+    // * all wells have the same length
+    // * 1 <= grid.length <= 10^2
+    // * 1 <= grid[:,1].length <= 10^2
+    // * grid[i][j] -> 0 | 1
+    // * 1 <= capacity <= 10
+    public static long maxFill(ArrayList<ArrayList<Long>> grid, long capacity) {
+
+AnswerGT: <NO_CANONICAL_SOLUTION>
+MostLikelyAns: 
+        long sum = 0;
+        for (int i = 0; i < grid.size(); i++) {
+            long count = 0;
+            for (int j = 0; j < grid.get(i).size(); j++) {
+                if (grid.get(i).get(j) == 0) {
+                    if (count > 0) {
+                        sum += count;
+                    }
+                    count = 0;
+                } else {
+                    count++;
+                }
+            }
+            if (count > 0) {
+                sum += count;
+            }
+        }
+        return sum / capacity;
+
+ 
+ 
+
