@@ -502,7 +502,7 @@ def check_correctness(
                 os.makedirs(tmp_dir)
             open(os.path.join(tmp_dir, "Problem.java"), 'w').write(sample["test_code"])
             origin_path = os.getcwd()
-            os.system(f"cp /drive2/tuandung/WCODELLM/benchmark/HumanEval/javatuples-1.2.jar {tmp_dir}/")
+            os.system(f"cp benchmark/HumanEval/javatuples-1.2.jar {tmp_dir}/")
             os.chdir(tmp_dir)
             res = "failed: unknown error"
             compile_returncode = -1

@@ -187,8 +187,8 @@ def print_results(results, dataset_names, repeat_each, layer_num_from_end):
 
     return overall_res
 
-# df = pd.read_parquet('/drive2/tuandung/WCODELLM/benchmark/MBPP/data/mbpp_data_ramdom_first_last_classify_dataset.parquet')
-# # df = pd.read_pickle('/drive2/tuandung/WCODELLM/benchmark/MBPP/data/mbpp_data_random_token_classify_dataset.pkl')
+# df = pd.read_parquet('benchmark/MBPP/data/mbpp_data_ramdom_first_last_classify_dataset.parquet')
+# # df = pd.read_pickle('benchmark/MBPP/data/mbpp_data_random_token_classify_dataset.pkl')
 
 # # df_label_0 = df[df['label'] == 0]
 # # df_label_1 = df[df['label'] == 1]
@@ -225,8 +225,8 @@ def print_results(results, dataset_names, repeat_each, layer_num_from_end):
 # train_dataset = df[df['task_id'].isin(task_ids_90)].reset_index(drop=True)
 # test_dataset = df[df['task_id'].isin(task_ids_10)].reset_index(drop=True)
 
-train_dataset = pd.read_parquet('/drive2/tuandung/WCODELLM/benchmark/MBPP/data/mbpp_data_ramdom_first_last_classify_train_dataset.parquet')
-test_dataset = pd.read_parquet('/drive2/tuandung/WCODELLM/benchmark/MBPP/data/mbpp_data_ramdom_first_last_classify_test_dataset.parquet')
+train_dataset = pd.read_parquet('benchmark/MBPP/data/mbpp_data_ramdom_first_last_classify_train_dataset.parquet')
+test_dataset = pd.read_parquet('benchmark/MBPP/data/mbpp_data_ramdom_first_last_classify_test_dataset.parquet')
 
 # df = df.sample(frac=1, random_state=42).reset_index(drop=True)  # Shuffle rows randomly
 
@@ -240,8 +240,8 @@ test_dataset = pd.read_parquet('/drive2/tuandung/WCODELLM/benchmark/MBPP/data/mb
 # print("Train labels:", train_dataset['label'].value_counts())
 # print("Test labels:", test_dataset['label'].value_counts())
 
-# train_dataset.to_parquet('/drive2/tuandung/WCODELLM/benchmark/MBPP/data/mbpp_data_ramdom_first_last_classify_train_dataset.parquet')
-# test_dataset.to_parquet('/drive2/tuandung/WCODELLM/benchmark/MBPP/data/mbpp_data_ramdom_first_last_classify_test_dataset.parquet')
+# train_dataset.to_parquet('benchmark/MBPP/data/mbpp_data_ramdom_first_last_classify_train_dataset.parquet')
+# test_dataset.to_parquet('benchmark/MBPP/data/mbpp_data_ramdom_first_last_classify_test_dataset.parquet')
 
 train_embeddings = np.array([embedding for embedding in train_dataset['input_token_middle_layer'].tolist()])
 train_labels = train_dataset['label'].astype(int)

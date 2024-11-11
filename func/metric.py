@@ -192,7 +192,8 @@ def getMiddleLayerEmbeddingEachToken(hidden_states, num_tokens):
     for ind in range(hidden_states[1][-1].shape[0]):
         last_embeddings[ind] = []
         for ind1 in range(num_tokens[ind]):
-            last_embeddings[ind].append(hidden_states[ind1][selected_layer][ind,-1,:].detach().cpu().float().numpy().tolist())
+            # last_embeddings[ind].append(hidden_states[ind1][selected_layer][ind,-1,:].detach().cpu().float().numpy().tolist())
+            last_embeddings[ind].append(hidden_states[ind1][selected_layer][ind,-1,:].detach().cpu().float().numpy())
         # last_embeddings[ind] = hidden_states[:num_tokens[ind]][selected_layer][ind,:,:]
         # last_embeddings[ind] = [last_embeddings[i][ind,-1,:].detach().cpu().numpy().tolist() for i in range(num_tokens[ind])]
     # print(last_embeddings[0][2])
@@ -204,7 +205,8 @@ def getLayerEmbeddingEachToken(hidden_states, num_tokens, selected_layer):
     for ind in range(hidden_states[1][-1].shape[0]):
         last_embeddings[ind] = []
         for ind1 in range(num_tokens[ind]):
-            last_embeddings[ind].append(hidden_states[ind1][selected_layer][ind,-1,:].detach().cpu().float().numpy().tolist())
+            # last_embeddings[ind].append(hidden_states[ind1][selected_layer][ind,-1,:].detach().cpu().float().numpy().tolist())
+            last_embeddings[ind].append(hidden_states[ind1][selected_layer][ind,-1,:].detach().cpu().float().numpy())
         # last_embeddings[ind] = hidden_states[:num_tokens[ind]][selected_layer][ind,:,:]
         # last_embeddings[ind] = [last_embeddings[i][ind,-1,:].detach().cpu().numpy().tolist() for i in range(num_tokens[ind])]
     # print(last_embeddings[0][2])
