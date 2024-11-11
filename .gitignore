@@ -59,3 +59,5 @@ tmp/*
 *.ipynb
 
 benchmark/HumanEval/human_eval/rust/*
+
+output
