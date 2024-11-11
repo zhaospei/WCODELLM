@@ -16,6 +16,7 @@ import _settings
 import dataeval.w_humaneval as human_eval
 import dataeval.w_mbpp as mbpp
 import dataeval.w_ds1000 as ds1000
+import dataeval.w_repoeval as repo_eval
 from dataeval.w_humaneval import cleanup_code as human_eval_cleanup_code
 import models
 import utils
@@ -71,6 +72,8 @@ def get_dataset_fn(data_name):
         return mbpp.get_dataset
     if data_name == 'ds1000':
         return ds1000.get_dataset
+    if data_name == 'repo_eval':
+        return repo_eval.get_dataset
 
 def get_clean_up_code_fn(data_name):
     if data_name == 'human_eval':
@@ -83,6 +86,8 @@ def get_num_tokens(generation, tokenizer, language_type='python', stop_words=[])
         return mbpp_get_num_tokens(generation, tokenizer)
     if args.dataset == 'ds1000':
         return ds1000_get_num_tokens(generation, tokenizer)
+    if args.dataset == 'repo_eval':
+        return repo_eval_get_num_tokens(generation, tokenizer)
 
 
 # def get_generation_config(tokenizer, data_name):
@@ -232,6 +237,19 @@ def find_sublist(gen_tensor_ids, stop_word_ids):
         first_index = torch.where(matches)[0][0].item() if matches.any() else -1
     
     return first_index
+
+def repo_eval_get_num_tokens(generation, tokenizer, language_type='python', stop_words=[]):
+    # stop_words = stop_words + ["</code>", "# SOLUTION END", "\nEND SOLUTION", ]
+    tokenizer_stop_words = [tokenizer.encode(_)[1:] for _ in stop_words] + [[tokenizer.eos_token_id]]
+    num_tokens = []
+    for ids in generation:
+        min_stop_idx = len(ids)
+        for stop_word in tokenizer_stop_words:
+            stop_index = find_sublist(ids, stop_word)
+            if 0 <= stop_index < min_stop_idx:
+                min_stop_idx = stop_index
+        num_tokens.append(min_stop_idx)
+    return num_tokens
 
 def ds1000_get_num_tokens(generation, tokenizer, language_type='python', stop_words=[]):
     stop_words = stop_words + ["</code>", "# SOLUTION END", "\nEND SOLUTION", ]
