@@ -5,10 +5,14 @@ import os
 import copy
 import time
 import gc
+<<<<<<< HEAD
 import pickle
+=======
+>>>>>>> 7f1c696a79b7769cd1430052fa2363d6a0b22193
 import pandas as pd
 import torch
 import tqdm
+import pickle
 from transformers import StoppingCriteria, StoppingCriteriaList
 from sentence_transformers import SentenceTransformer
 from torchmetrics.text.bert import BERTScore
@@ -17,6 +21,7 @@ import _settings
 import dataeval.w_humaneval as human_eval
 import dataeval.w_mbpp as mbpp
 import dataeval.w_ds1000 as ds1000
+import dataeval.w_repoeval as repo_eval
 from dataeval.w_humaneval import cleanup_code as human_eval_cleanup_code
 import models
 import utils
@@ -46,7 +51,7 @@ args = parser.parse_args()
 print(args.model.replace('/', '_'))
 ml_time = int(time.time() * 1000)
 layer_name = '_'.join(str(x) for x in args.layers)
-OUTPUT_DIR = os.path.join(_settings.GENERATION_FOLDER, f'{ml_time}_{args.model.replace("/", "_")}_{args.dataset}_{args.language}_{layer_name}')
+OUTPUT_DIR = os.path.join(_settings.GENERATION_FOLDER, f'{args.model.replace("/", "_")}_{args.dataset}_{args.language}_{layer_name}')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 logInfo = open(os.path.join(OUTPUT_DIR, "logInfo.txt"), mode="w",encoding="utf-8")
 
@@ -72,6 +77,8 @@ def get_dataset_fn(data_name):
         return mbpp.get_dataset
     if data_name == 'ds1000':
         return ds1000.get_dataset
+    if data_name == 'repo_eval':
+        return repo_eval.get_dataset
 
 def get_clean_up_code_fn(data_name):
     if data_name == 'human_eval':
@@ -84,6 +91,8 @@ def get_num_tokens(generation, tokenizer, language_type='python', stop_words=[])
         return mbpp_get_num_tokens(generation, tokenizer)
     if args.dataset == 'ds1000':
         return ds1000_get_num_tokens(generation, tokenizer)
+    if args.dataset == 'repo_eval':
+        return repo_eval_get_num_tokens(generation, tokenizer)
 
 
 # def get_generation_config(tokenizer, data_name):
@@ -101,7 +110,11 @@ def get_stop_words(data_name):
 
 
 @torch.no_grad()
+<<<<<<< HEAD
 def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_gen_once=args.num_generations_per_prompt, cache_dir='output'):
+=======
+def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_gen_once=args.num_generations_per_prompt,cache_dir='output'):
+>>>>>>> 7f1c696a79b7769cd1430052fa2363d6a0b22193
     device = args.device
     model, tokenizer = models.load_model_and_tokenizer(model_name, args.device, args.load_in_8bit)
     # for name, param in model.named_parameters():
@@ -131,7 +144,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
     if args.fraction_of_data_to_use < 1.0:
         dataset = dataset.train_test_split(test_size=(1 - args.fraction_of_data_to_use), seed=seed)['train']
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
-
+    print('len dataset', len(dataloader))
     if old_sequences is None:
         old_sequences = []
     old_sequences = {_['task_id']: _ for _ in old_sequences}
@@ -146,19 +159,24 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         if batch['task_id'][0] in old_sequences:
             sequences.append(old_sequences[batch['task_id'][0]])
             continue
+        if os.path.exists(out_dir_task_id):
+            continue # generated
         # print(f"Batch {batch_idx} | Task ID: {batch['task_id']}")
         # print(batch)
         if os.path.exists(out_dir_task_id):
             continue # generated
         input_ids = batch['input_ids'].to(device)
         # print(f"input_ids: {input_ids}")
-        # print(f"input_ids shape: {input_ids.shape}")
+        print(f"input_ids shape: {input_ids.shape}")
         # print(f"attention_mask: {batch['attention_mask']}")
         # print(f"attention_mask shape: {batch['attention_mask'].shape}")
+        if input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9:
+            continue
         input_length = input_ids.shape[1]
         if input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9:
             continue
         torch.cuda.empty_cache()
+        
         generations = []
         generations_decoded = []
         num_gens = args.num_generations_per_prompt
@@ -181,10 +199,14 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                 generations.append(gen[:num_token])
             for gen_ids in generations:
                 generations_decoded.append(tokenizer.decode(gen_ids, skip_special_tokens=True))
-            print(generations_decoded)
+            # print(generations_decoded)
             hidden_states = dict_outputs.hidden_states
             del dict_outputs
             gc.collect()
+<<<<<<< HEAD
+=======
+            torch.cuda.empty_cache()
+>>>>>>> 7f1c696a79b7769cd1430052fa2363d6a0b22193
             layers = args.layers
             layer_embeddings = {}
             for layer in layers:
@@ -192,11 +214,14 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                     layer_embeddings[layer] = getMiddleLayerEmbeddingEachToken(hidden_states, num_tokens)
                 else:
                     layer_embeddings[layer] = getLayerEmbeddingEachToken(hidden_states, num_tokens, layer)
+<<<<<<< HEAD
                 # layer_embeddings = getLayerEmbeddingEachToken(hidden_states, num_tokens, layer)
             # if args.layer == -2:
             #     layer_embeddings = getMiddleLayerEmbeddingEachToken(hidden_states, num_tokens)
             # else:
             #     layer_embeddings = getLayerEmbeddingEachToken(hidden_states, num_tokens, args.layer)
+=======
+>>>>>>> 7f1c696a79b7769cd1430052fa2363d6a0b22193
             del hidden_states
             gc.collect()
             torch.cuda.empty_cache()
@@ -230,6 +255,10 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         print("MostLikelyAns:", tokenizer.decode(curr_seq['generations_ids'][0], skip_special_tokens=True), file=logInfo)
         print("\n","\n","\n", file=logInfo)
         # sequences.append(curr_seq)
+<<<<<<< HEAD
+=======
+        
+>>>>>>> 7f1c696a79b7769cd1430052fa2363d6a0b22193
         pickle.dump(curr_seq,open(out_dir_task_id,'wb'))
         
         torch.cuda.empty_cache()
@@ -249,6 +278,19 @@ def find_sublist(gen_tensor_ids, stop_word_ids):
         first_index = torch.where(matches)[0][0].item() if matches.any() else -1
     
     return first_index
+
+def repo_eval_get_num_tokens(generation, tokenizer, language_type='python', stop_words=[]):
+    # stop_words = stop_words + ["</code>", "# SOLUTION END", "\nEND SOLUTION", ]
+    tokenizer_stop_words = [tokenizer.encode(_)[1:] for _ in stop_words] + [[tokenizer.eos_token_id]]
+    num_tokens = []
+    for ids in generation:
+        min_stop_idx = len(ids)
+        for stop_word in tokenizer_stop_words:
+            stop_index = find_sublist(ids, stop_word)
+            if 0 <= stop_index < min_stop_idx:
+                min_stop_idx = stop_index
+        num_tokens.append(min_stop_idx)
+    return num_tokens
 
 def ds1000_get_num_tokens(generation, tokenizer, language_type='python', stop_words=[]):
     stop_words = stop_words + ["</code>", "# SOLUTION END", "\nEND SOLUTION", ]
@@ -362,8 +404,16 @@ def main(overwrite=False, continue_from=None, parallel:int=None):
         os.makedirs(temp_dir)
     print(f'Generating {args.num_generations_per_prompt} generations per prompt for {model_name} on {args.dataset}...')
     print(f"Saving to {os.path.join(cache_dir, f'{run_id}.pkl')}")
+<<<<<<< HEAD
     sequences = get_generations(model_name, args, seed=args.seed, old_sequences=old_sequences, cache_dir=temp_dir)
+=======
+    temp_dir = os.path.join(cache_dir,'temp')
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+    sequences = get_generations(model_name, args, seed=args.seed, old_sequences=old_sequences,cache_dir=temp_dir)
+>>>>>>> 7f1c696a79b7769cd1430052fa2363d6a0b22193
     print(f'Writing {len(sequences)} generations to {cache_dir}...')
+    
     pd.to_pickle(sequences, os.path.join(cache_dir, f'{run_id}.pkl'))
     return
 

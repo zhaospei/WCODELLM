@@ -10,8 +10,8 @@ import os
 from benchmark.HumanEval.human_eval.evaluation import evaluate_functional_correctness_each_sample, evaluate_functional_correctness
 
 
-data_root = "/drive2/tuandung/WCODELLM/benchmark/HumanEval/data"
-continue_from = '/drive2/tuandung/WCODELLM/mbpp_result/rs-2/0.pkl'
+data_root = "benchmark/HumanEval/data"
+continue_from = 'mbpp_result/rs-2/0.pkl'
 kwargs_handlers = [DistributedDataParallelKwargs(find_unused_parameters=True)]
 accelerator = Accelerator(mixed_precision="bf16", kwargs_handlers=kwargs_handlers)
 model_name = 'deepseek-ai/deepseek-coder-1.3b-base'

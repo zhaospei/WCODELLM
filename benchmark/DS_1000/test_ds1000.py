@@ -7,7 +7,7 @@ import concurrent.futures as cfuts
 import pandas as pd
 from tqdm import tqdm
 
-import execution
+import benchmark.DS_1000.execution as execution
 
 # # Option 1:
 # from datasets import load_dataset
