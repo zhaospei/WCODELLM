@@ -80,7 +80,7 @@ def get_clean_up_code_fn(data_name):
     if data_name == 'human_eval':
         return human_eval_cleanup_code
 
-def get_num_tokens(generation, tokenizer, language_type='python', stop_words=[]):
+def get_num_tokens(generation, tokenizer, language_type='python', stop_words=[], ground_truth=None):
     if args.dataset == 'human_eval':
         return humaneval_get_num_tokens(generation, tokenizer, language_type, stop_words)
     if args.dataset == 'mbpp':
@@ -88,7 +88,7 @@ def get_num_tokens(generation, tokenizer, language_type='python', stop_words=[])
     if args.dataset == 'ds1000':
         return ds1000_get_num_tokens(generation, tokenizer)
     if args.dataset == 'repo_eval':
-        return repo_eval_get_num_tokens(generation, tokenizer)
+        return repo_eval_get_num_tokens(generation, ground_truth, tokenizer)
 
 
 # def get_generation_config(tokenizer, data_name):
@@ -253,8 +253,10 @@ def find_sublist(gen_tensor_ids, stop_word_ids):
     
     return first_index
 
-def repo_eval_get_num_tokens(generation, tokenizer, language_type='python', stop_words=[]):
+def repo_eval_get_num_tokens(generation, ground_truth, tokenizer, language_type='python', stop_words=[]):
     # stop_words = stop_words + ["</code>", "# SOLUTION END", "\nEND SOLUTION", ]
+    generation_decoded = [tokenizer.decode(ids, skip_special_tokens=True) for ids in generation]
+    
     tokenizer_stop_words = [tokenizer.encode(_)[1:] for _ in stop_words] + [[tokenizer.eos_token_id]]
     num_tokens = []
     for ids in generation:
