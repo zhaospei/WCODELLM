@@ -8,7 +8,7 @@ from benchmark.HumanEval.utils.dataset import HumanEvalDataset
 from benchmark.MBPP.utils.dataset import MBPPDataset
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, StoppingCriteria, StoppingCriteriaList
-
+import json
 import _settings
 DATASET_ROOT= os.path.join(_settings.DATA_FOLDER, "MBPP", "data")
 
@@ -26,8 +26,50 @@ class KeywordsStoppingCriteria(StoppingCriteria):
                 return True
         return False
 
-def _save_dataset(tokenizer, max_seq_len, max_gen_len):
-    save_path = f"{DATASET_ROOT}/{tokenizer.name_or_path}_{max_seq_len}_{max_gen_len}"
+def read_test_examples(data_path: str):
+    def format_test_example(q, tests, code: str=None):
+        prompt = ">>> Problem:\n{}\n>>> Test Cases:\n{}\n".format(q.strip(), "\n".join(tests))
+        if code:
+            code = code.replace("\r", "").replace("\t", "    ")
+            prompt += "\n>>> Code:\n```python\n{}\n```".format(code)
+        return prompt
+
+    examples = [json.loads(x) for x in open(data_path)]
+    print("Read all {} examples from {} over!".format(len(examples), data_path))
+
+    # test_cases
+    examples_str = []
+    for i in range(1, 4):
+        ex = examples[i]
+        q, test, code = ex['text'], ex['test_list'], ex['code']
+        ex_prompt = format_test_example(q, test, code)
+        example_prompt = '- Example {}:\n{}'.format(i, ex_prompt)
+        examples_str += [example_prompt]
+
+    for i in range(10, 510):
+        ex = examples[i]
+        q, test, code = ex['text'], ex['test_list'], ex['code']
+        
+        prompt = format_test_example(q, test, code=None)
+
+        prompt_with_shots = '''
+Please refer the given examples and generate a python function for my problem.\n
+Examples are listed as follows:
+{}
+
+Here is my problem:
+{}
+'''.strip().format('\n\n'.join(examples_str), prompt)
+        yield {
+            'task_id': ex['task_id'],
+            'prompt': prompt_with_shots,
+            'original_prompt': ex['text'],
+            'canonical_solution': ex['code']
+        }
+
+def _save_dataset(tokenizer, max_seq_len, max_gen_len, instruction=False):
+    save_path = f"{DATASET_ROOT}/{tokenizer.name_or_path}_{max_seq_len}_{max_gen_len}_{instruction}"
+    
     if not os.path.exists(save_path):
         mpbb_data = MBPPDataset(root=DATASET_ROOT)
         dataset = {}
@@ -37,36 +79,46 @@ def _save_dataset(tokenizer, max_seq_len, max_gen_len):
         dataset["prompt_length"] = []
         dataset["original_prompt"] = []
         
-        for j in range(len(mpbb_data)):
-            data = mpbb_data[j]
-            prompt = mpbb_data.prompt
-            prompt1 = data["prompt"]
-            tests = "\n".join(data["test"])
-            # test_list.append(data["test"])
-            prompt_curr = f"You are an expert Python programmer, and here is your task: {prompt1} Your code should pass these tests:\n\n{tests}\n[BEGIN]"
-            fprompt = ""
-            for i in range(len(prompt) - 1, -1, -1):
-                finalprompt = prompt[i] + prompt_curr
-                curr_seq_len = len(tokenizer.encode(finalprompt))
-                if curr_seq_len >= max_seq_len - max_gen_len:
-                    continue
-                else:
-                    fprompt = finalprompt
-                    break
-            if fprompt == "":
-                fprompt = prompt_curr
-                encodelist = tokenizer.encode(fprompt)
-                while True:
-                    try:
-                        fprompt = tokenizer.decode(encodelist[:max_seq_len - max_gen_len])
+        if instruction:
+            problem_file = os.path.join(DATASET_ROOT, f"mbpp.jsonl")
+            examples = list(read_test_examples(problem_file))
+            for ex in examples:
+                dataset["prompt"].append(ex["prompt"])
+                dataset["task_id"].append(ex["task_id"])
+                dataset["canonical_solution"].append(ex["canonical_solution"])
+                dataset["prompt_length"].append(len(ex["prompt"]))
+                dataset["original_prompt"].append(ex["original_prompt"])
+        else:
+            for j in range(len(mpbb_data)):
+                data = mpbb_data[j]
+                prompt = mpbb_data.prompt
+                prompt1 = data["prompt"]
+                tests = "\n".join(data["test"])
+                # test_list.append(data["test"])
+                prompt_curr = f"You are an expert Python programmer, and here is your task: {prompt1} Your code should pass these tests:\n\n{tests}\n[BEGIN]"
+                fprompt = ""
+                for i in range(len(prompt) - 1, -1, -1):
+                    finalprompt = prompt[i] + prompt_curr
+                    curr_seq_len = len(tokenizer.encode(finalprompt))
+                    if curr_seq_len >= max_seq_len - max_gen_len:
+                        continue
+                    else:
+                        fprompt = finalprompt
                         break
-                    except:
-                        encodelist.pop(-1)
-            dataset["prompt"].append(fprompt)
-            dataset["canonical_solution"].append(data['code'])
-            dataset["prompt_length"].append(len(fprompt))
-            dataset["task_id"].append(data["task_id"])
-            dataset["original_prompt"].append(data["prompt"])
+                if fprompt == "":
+                    fprompt = prompt_curr
+                    encodelist = tokenizer.encode(fprompt)
+                    while True:
+                        try:
+                            fprompt = tokenizer.decode(encodelist[:max_seq_len - max_gen_len])
+                            break
+                        except:
+                            encodelist.pop(-1)
+                dataset["prompt"].append(fprompt)
+                dataset["canonical_solution"].append(data['code'])
+                dataset["prompt_length"].append(len(fprompt))
+                dataset["task_id"].append(data["task_id"])
+                dataset["original_prompt"].append(data["prompt"])
             
         data_df = pd.DataFrame.from_dict(dataset)
         dataset = Dataset.from_pandas(data_df)
@@ -76,8 +128,8 @@ def _save_dataset(tokenizer, max_seq_len, max_gen_len):
 
 # _save_dataset(sft=False)
 
-def get_dataset(tokenizer, language='python', max_seq_len=4096, max_gen_len=500):
-    dataset = datasets.load_from_disk(_save_dataset(tokenizer, max_seq_len, max_gen_len))
+def get_dataset(tokenizer, language='python', instruction=False, max_seq_len=4096, max_gen_len=500):
+    dataset = datasets.load_from_disk(_save_dataset(tokenizer, max_seq_len, max_gen_len, instruction))
     
     def encode_mbpp(example):
         tokenized_prompt = tokenizer(example['prompt'], truncation=False, padding=False)
