@@ -5,10 +5,7 @@ import os
 import copy
 import time
 import gc
-<<<<<<< HEAD
 import pickle
-=======
->>>>>>> 7f1c696a79b7769cd1430052fa2363d6a0b22193
 import pandas as pd
 import torch
 import tqdm
@@ -110,11 +107,7 @@ def get_stop_words(data_name):
 
 
 @torch.no_grad()
-<<<<<<< HEAD
-def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_gen_once=args.num_generations_per_prompt, cache_dir='output'):
-=======
 def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_gen_once=args.num_generations_per_prompt,cache_dir='output'):
->>>>>>> 7f1c696a79b7769cd1430052fa2363d6a0b22193
     device = args.device
     model, tokenizer = models.load_model_and_tokenizer(model_name, args.device, args.load_in_8bit)
     # for name, param in model.named_parameters():
@@ -203,10 +196,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             hidden_states = dict_outputs.hidden_states
             del dict_outputs
             gc.collect()
-<<<<<<< HEAD
-=======
             torch.cuda.empty_cache()
->>>>>>> 7f1c696a79b7769cd1430052fa2363d6a0b22193
             layers = args.layers
             layer_embeddings = {}
             for layer in layers:
@@ -214,14 +204,6 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                     layer_embeddings[layer] = getMiddleLayerEmbeddingEachToken(hidden_states, num_tokens)
                 else:
                     layer_embeddings[layer] = getLayerEmbeddingEachToken(hidden_states, num_tokens, layer)
-<<<<<<< HEAD
-                # layer_embeddings = getLayerEmbeddingEachToken(hidden_states, num_tokens, layer)
-            # if args.layer == -2:
-            #     layer_embeddings = getMiddleLayerEmbeddingEachToken(hidden_states, num_tokens)
-            # else:
-            #     layer_embeddings = getLayerEmbeddingEachToken(hidden_states, num_tokens, args.layer)
-=======
->>>>>>> 7f1c696a79b7769cd1430052fa2363d6a0b22193
             del hidden_states
             gc.collect()
             torch.cuda.empty_cache()
@@ -254,12 +236,9 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         print("AnswerGT:", batch['canonical_solution'][0], file=logInfo)
         print("MostLikelyAns:", tokenizer.decode(curr_seq['generations_ids'][0], skip_special_tokens=True), file=logInfo)
         print("\n","\n","\n", file=logInfo)
-        # sequences.append(curr_seq)
-<<<<<<< HEAD
-=======
+        sequences.append(curr_seq)
         
->>>>>>> 7f1c696a79b7769cd1430052fa2363d6a0b22193
-        pickle.dump(curr_seq,open(out_dir_task_id,'wb'))
+        # pickle.dump(curr_seq,open(out_dir_task_id,'wb'))
         
         torch.cuda.empty_cache()
     return sequences
@@ -404,14 +383,10 @@ def main(overwrite=False, continue_from=None, parallel:int=None):
         os.makedirs(temp_dir)
     print(f'Generating {args.num_generations_per_prompt} generations per prompt for {model_name} on {args.dataset}...')
     print(f"Saving to {os.path.join(cache_dir, f'{run_id}.pkl')}")
-<<<<<<< HEAD
-    sequences = get_generations(model_name, args, seed=args.seed, old_sequences=old_sequences, cache_dir=temp_dir)
-=======
     temp_dir = os.path.join(cache_dir,'temp')
     if not os.path.exists(temp_dir):
         os.makedirs(temp_dir)
     sequences = get_generations(model_name, args, seed=args.seed, old_sequences=old_sequences,cache_dir=temp_dir)
->>>>>>> 7f1c696a79b7769cd1430052fa2363d6a0b22193
     print(f'Writing {len(sequences)} generations to {cache_dir}...')
     
     pd.to_pickle(sequences, os.path.join(cache_dir, f'{run_id}.pkl'))
