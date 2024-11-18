@@ -54,3 +54,16 @@ def get_dataset(tokenizer, language, sft=False):
     dataset.set_format(type='torch', columns=['input_ids', 'attention_mask'], output_all_columns=True)
 
     return dataset
+
+def postprocess_by_function(generation, target):
+    first_token = target.split()[0]
+    function_indent = target.split(first_token)[0]
+    generation_lines = []
+    for line in generation.split('\n'):
+        if line.split() and line.split()[0]!='#':
+            first_token = line.split()[0]
+            indent = line.split(first_token)[0]
+            if len(indent) < len(function_indent):
+                break
+            generation_lines.append(line)
+    return generation_lines

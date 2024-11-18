@@ -38,11 +38,18 @@ def _save_dataset(language, sft=False):
 
 # _save_dataset(sft=False)
 
-def get_dataset(tokenizer, language, sft=False):
+def get_dataset(tokenizer, language, sft=False, instruction=False):
     dataset = datasets.load_from_disk(_save_dataset(language, sft))
 
     def encode_humaneval(example):
         prompt = example['prompt']
+        if instruction:
+            prompt = "Write a short code following the given format and indentation. Place the executable code between <code> and </code> tags, without any other non-executable things.\n" + prompt
+            prompt = tokenizer.apply_chat_template(
+                [
+                    {"role": "user", "content": f'{prompt}'}
+                ], tokenize=False, add_generation_prompt=True)
+        
         return tokenizer(prompt, truncation=False, padding=False)
 
     dataset = dataset.map(encode_humaneval, batched=False, load_from_cache_file=False)

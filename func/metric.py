@@ -279,7 +279,11 @@ def getEigenIndicator_v2(hidden_states, num_tokens):
     print("LayerEigens: ", LayerEigens)
     return np.mean(LayerEigens[20:-2]), s
 
-
+def getNumToken(generated_text, cleaned_text, tokenizer):
+    tokenized_generated_text = tokenizer.tokenize(generated_text, add_special_tokens=False)
+    tokenized_cleaned_text = tokenizer.tokenize(cleaned_text, add_special_tokens=False)
+    num_tokens = len(tokenized_generated_text) - len(tokenized_cleaned_text)
+    return num_tokens
 
 # ###### 查看不同层的语义熵, 融合不同层的语义熵
 # def getEigenIndicator_v2(hidden_states): #[num_tokens, 41, num_seq, ?, 5120]
