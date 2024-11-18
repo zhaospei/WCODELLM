@@ -100,19 +100,19 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         old_sequences = []
     old_sequences = {_['task_id']: _ for _ in old_sequences}
     sequences = {}
-    for layer in args.layers:
-        sequences[layer] = []
+    # for layer in args.layers:
+    #     sequences[layer] = []
     generation_sequences_output = []
     
     for batch_idx, batch in tqdm.tqdm(enumerate(dataloader), total=len(dataloader)):
         # print(batch.keys())
-        # task_id_path = str(batch['task_id'][0]).replace('/','_').replace('[','_').replace(']','_')
-        # out_dir_task_id = os.path.join(cache_dir,f"{task_id_path}.pkl")
+        task_id_path = str(batch['task_id'][0]).replace('/','_').replace('[','_').replace(']','_')
+        out_dir_task_id = os.path.join(cache_dir, f"{task_id_path}.pkl")
         if batch['task_id'][0] in old_sequences:
             sequences.append(old_sequences[batch['task_id'][0]])
             continue
-        # if os.path.exists(out_dir_task_id):
-        #     continue # generated
+        if os.path.exists(out_dir_task_id):
+            continue # generated
 
         input_ids = batch['input_ids'].to(device)
         print(f"input_ids shape: {input_ids.shape}")
@@ -168,8 +168,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         
         for layer in layers_to_process:
             layer_embeddings = all_token_hidden_states_layer_list[layer]
-            sequences[layer].append(
-                dict(
+            layer_embeddings_dict = dict(
                     # prompt=tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True),
                     id=batch['task_id'][0],
                     # problem=batch['original_prompt'][0],
@@ -177,7 +176,9 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                     # generations=generations_decoded,
                     # generations_ids=generations,
                 )
-            )
+            
+            # print(f'Writing {len(sequences[layer])} generations to {cache_dir}...')
+            pd.to_pickle(layer_embeddings_dict, os.path.join(cache_dir, f'all_token_embedding_{task_id_path}_{layer}.pkl'))
         generation_sequences_output.append(
             dict(
                 prompt=tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True),
@@ -202,9 +203,6 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         
         torch.cuda.empty_cache()
     
-    for layer in args.layers:
-        print(f'Writing {len(sequences[layer])} generations to {cache_dir}...')
-        pd.to_pickle(sequences[layer], os.path.join(cache_dir, f'all_token_embedding_{layer}.pkl'))
     
     pd.to_pickle(generation_sequences_output, os.path.join(cache_dir, f'generation_sequences_output.pkl'))
     return
