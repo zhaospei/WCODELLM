@@ -179,15 +179,14 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             
             # print(f'Writing {len(sequences[layer])} generations to {cache_dir}...')
             pd.to_pickle(layer_embeddings_dict, os.path.join(cache_dir, f'all_token_embedding_{task_id_path}_{layer}.pkl'))
-        generation_sequences_output.append(
-            dict(
+        generation_sequences_output = dict(
                 prompt=tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True),
                 id=batch['task_id'][0],
                 problem=batch['original_prompt'][0],
                 generations=generations_decoded,
                 generations_ids=generations,
             )
-        )
+        pd.to_pickle(generation_sequences_output, os.path.join(cache_dir, f'generation_sequences_output_{task_id_path}.pkl'))
         
         print("Prompt:", tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True))
         print("Problem:", batch['original_prompt'][0])
@@ -204,7 +203,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         torch.cuda.empty_cache()
     
     
-    pd.to_pickle(generation_sequences_output, os.path.join(cache_dir, f'generation_sequences_output.pkl'))
+    # pd.to_pickle(generation_sequences_output, os.path.join(cache_dir, f'generation_sequences_output.pkl'))
     return
 
 def main(overwrite=False, continue_from=None, parallel:int=None):
