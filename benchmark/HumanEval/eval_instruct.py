@@ -21,6 +21,7 @@ Please continue to complete the function. You are not allowed to modify the give
 
 def generate_one(example, lang, tokenizer, model):
     prompt = build_deepseekcoder_instruction(languge_settings[lang]['full_name'], example['prompt'])
+    # print(prompt)
     inputs = tokenizer.apply_chat_template(
         [{'role': 'user', 'content': prompt }],
         return_tensors="pt",
@@ -39,8 +40,10 @@ def generate_one(example, lang, tokenizer, model):
         pad_token_id=stop_id,
         eos_token_id=stop_id
     )
+    # print(tokenizer.decode(outputs[0], skip_special_tokens=True))
 
     output = tokenizer.decode(outputs[0][len(inputs[0]):], skip_special_tokens=True)
+    # print(output)
     example['output'] = output
     
     return extract_generation_code(example, lang_code=lang)
@@ -69,6 +72,7 @@ def generate_main(args):
     generated_examples = []
     for ex in tqdm(examples, desc='Generating'):
         gen_example = generate_one(ex, args.language, tokenizer, model)
+        # print(gen_example)
         generated_examples.append(gen_example)
 
     print("Generate all over!!!")

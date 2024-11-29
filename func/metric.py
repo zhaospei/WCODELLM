@@ -10,6 +10,22 @@ from selfcheckgpt.modeling_selfcheck import SelfCheckBERTScore
 ###### 导入ROUGE评估函数计算ROUGE-L指标
 rougeEvaluator = rouge_scorer.RougeScorer(["rouge1", "rouge2", "rougeL"], use_stemmer=True)
 
+def getCleanGenerationRange(generated_text, clean_text, tokenizer):
+    tokenized_generated_text = tokenizer.tokenize(generated_text, add_special_tokens=False)
+    tokenized_clean_text = tokenizer.tokenize(clean_text, add_special_tokens=False)
+    start_ind = -1
+    for i in range(len(tokenized_generated_text) - len(tokenized_clean_text) + 1):
+        if tokenized_generated_text[i:i+len(tokenized_clean_text)] == tokenized_clean_text:
+            start_ind = i
+            break
+    
+    if start_ind == -1:
+        return None, None  # Clean text not found in generated text
+        
+    end_ind = start_ind + len(tokenized_clean_text)
+    
+    return start_ind, end_ind
+
 
 ### 根据GT答案及生成回答计算回答的Rouge Score
 def getRouge(rouge, generations, answers):

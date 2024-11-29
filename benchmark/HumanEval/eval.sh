@@ -1,4 +1,10 @@
-MODEL_NAME_OR_PATH="deepseek/deepseek-coder-1b"
-DATASET_ROOT="data/"
-LANGUAGE="python"
-CUDA_VISIBLE_DEVICES=1,2,3 python -m accelerate.commands.launch --config_file test_config.yaml eval_pal.py --logdir ${MODEL_NAME_OR_PATH} --language ${LANGUAGE} --dataroot ${DATASET_ROOT}
+# 
+LANG="python"
+OUPUT_DIR="output"
+MODEL="deepseek-coder-1.3b-instruct"
+
+CUDA_VISIBLE_DEVICES=0,1 python eval_instruct.py \
+    --model "deepseek-ai/$MODEL" \
+    --output_path "$OUPUT_DIR/${LANG}.$MODEL.jsonl" \
+    --language $LANG \
+    --temp_dir $OUPUT_DIR

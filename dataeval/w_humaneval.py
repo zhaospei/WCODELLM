@@ -1,4 +1,5 @@
 import os
+import re
 import datasets
 import pandas as pd
 from datasets import Dataset
@@ -56,6 +57,7 @@ Please continue to complete the function. You are not allowed to modify the give
 
 def _save_dataset(language, sft=False, instruction=False):
     save_path = f"{DATASET_ROOT}/{language}" if not sft else f"{DATASET_ROOT}/{language}_sft"
+    save_path = f"{save_path}_instruction" if instruction else save_path
     if not os.path.exists(save_path):
         data = HumanEvalDataset(root=DATASET_ROOT, language=language, issft=sft)
         dataset = {}
@@ -66,8 +68,8 @@ def _save_dataset(language, sft=False, instruction=False):
         dataset["stopwords"] = []
         
         if instruction:
-            prompt = build_deepseekcoder_instruction(languge_settings[language]['full_name'], sample['prompt'])
             for sample in data:
+                prompt = build_deepseekcoder_instruction(languge_settings[language]['full_name'], sample['prompt'])
                 dataset["prompt"].append(prompt)
                 dataset["task_id"].append(sample["task_id"])
                 dataset["original_prompt"].append(sample["original_prompt"])
@@ -90,7 +92,7 @@ def _save_dataset(language, sft=False, instruction=False):
 # _save_dataset(sft=False)
 
 def get_dataset(tokenizer, language, sft=False, instruction=False):
-    dataset = datasets.load_from_disk(_save_dataset(language, sft))
+    dataset = datasets.load_from_disk(_save_dataset(language, sft, instruction))
 
     def encode_humaneval(example):
         prompt = example['prompt']
@@ -147,3 +149,71 @@ def _truncate_code_at_stopwords(code, stop_words):
         if 0 <= stop_index < min_stop_idx:
             min_stop_idx = stop_index
     return code[:min_stop_idx]
+
+def get_function_name(question: str, lang: str):
+    func_lines = [x for x in question.strip().split('\n') if x.strip()]
+
+    if lang.lower() == 'python':
+        func_idx = [i for i in range(len(func_lines)) if func_lines[i].startswith("def ")][-1]
+        func_name = func_lines[func_idx].split('(')[0].strip()
+        func_prefix = "\n".join(func_lines[:func_idx])
+        return func_name, func_prefix
+    
+    func_name = func_lines[-1].split('{')[0].strip()
+    func_prefix = "\n".join(func_lines[:-1])
+    return func_name, func_prefix
+
+def extract_generation_code(example, output, lang_code: str, verbose: bool=False):
+    task_id = example['task_id'][0]
+    # output = example.get('output', example.get("gpt_completion"))
+    question = example["original_prompt"][0].strip()
+    setting = languge_settings[lang_code]
+    lang = setting['full_name']
+    indent = setting['indent']
+    print()
+    
+    try:
+        # print(output)
+        code_block: str = re.findall(f'```{lang.lower()}\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+
+        # Remove main
+        if setting.get('main', None) and setting['main'] in code_block:
+            main_start = code_block.index(setting['main'])
+            code_block = code_block[:main_start]
+        
+        func_name, func_prefix = get_function_name(question, lang)
+        # print(func_name, func_prefix)
+
+        try:
+            start = code_block.lower().index(func_name.lower())
+            indent = 0
+            while start - indent >= 0 and code_block[start - indent-1] == ' ':
+                indent += 1
+            
+            try:
+                end = code_block.rindex('\n' + ' '*indent + '}')
+            except:
+                end = len(code_block)
+        except:
+            start = 0
+            try:
+                end = code_block.rindex('\n' + ' '*indent + '}')
+            except:
+                end = len(code_block)
+
+        body = code_block[start:end]
+
+        if lang_code.lower() in ['php', 'ts', 'js']:
+            body += '\n' + ' '*indent + '}'
+
+        generation = func_prefix + '\n' + body + '\n'
+        # example['generation'] = generation
+
+    except Exception as ex:
+        print("Failed to extract code block with error `{}`:\n>>> Task: {}\n>>> Output:\n{}".format(
+            ex, task_id, output
+        ))
+        # example['generation'] = example['prompt'] + '\n' + output
+        generation = output
+
+    return generation
