@@ -1,4 +1,5 @@
 import os
+import re
 import datasets
 import pandas as pd
 from datasets import Dataset
@@ -190,3 +191,27 @@ def _truncate_code_at_stopwords(code, stop_words):
         if 0 <= stop_index < min_stop_idx:
             min_stop_idx = stop_index
     return code[:min_stop_idx]
+
+
+def extract_generation_code(example, output, lang_code: str, verbose: bool=False):
+    task_id = example['task_id']
+    # output = example.get('output', example.get("gpt_completion"))
+    
+    try:
+        # print(output)
+        code_block: str = re.findall(f'```python\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+        # print(code_block)
+        generation = code_block
+        # print(f"Function Prefix: {func_prefix}")
+        # example['generation'] = generation
+
+    except Exception as ex:
+        print("Failed to extract code block with error `{}`:\n>>> Task: {}\n>>> Output:\n{}".format(
+            ex, task_id, output
+        ))
+        # example['generation'] = example['prompt'] + '\n' + output
+        generation = output
+
+    # print(f'Generation: {generation}')
+    print(generation)
+    return generation

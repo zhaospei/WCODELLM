@@ -171,7 +171,6 @@ def extract_generation_code(example, output, lang_code: str, verbose: bool=False
     setting = languge_settings[lang_code]
     lang = setting['full_name']
     indent = setting['indent']
-    print()
     
     try:
         # print(output)
