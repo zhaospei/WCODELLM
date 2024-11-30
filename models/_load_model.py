@@ -13,18 +13,6 @@ from _settings import MODEL_PATH
 
 @functools.lru_cache()
 def _load_pretrained_model(model_name, device, load_in_8bit, torch_dtype=torch.float16):
-    if model_name.startswith('facebook/opt'):
-        model = OPTForCausalLM.from_pretrained(MODEL_PATH+model_name.split("/")[1], torch_dtype=torch_dtype)
-    elif model_name == "microsoft/deberta-large-mnli":
-        model = AutoModelForSequenceClassification.from_pretrained("microsoft/deberta-large-mnli")#, torch_dtype=torch_dtype)
-    if model_name == 'llama-7b-hf' or model_name == 'llama-13b-hf' or model_name == "llama2-7b-hf":
-        model = AutoModelForCausalLM.from_pretrained(os.path.join(MODEL_PATH, model_name), cache_dir=None, torch_dtype=torch_dtype)
-    if model_name == "falcon-7b":
-        model = AutoModelForCausalLM.from_pretrained(os.path.join(MODEL_PATH, model_name), cache_dir=None, trust_remote_code=True, torch_dtype=torch_dtype)
-    # elif "opt" in model_name:
-    #     model = AutoModelForCausalLM.from_pretrained(os.path.join(MODEL_PATH, model_name), cache_dir=None, torch_dtype=torch_dtype)
-    elif model_name == 'roberta-large-mnli':
-         model = AutoModelForSequenceClassification.from_pretrained("roberta-large-mnli")#, torch_dtype=torch_dtype)
     kwargs_handlers = [DistributedDataParallelKwargs(find_unused_parameters=True)]
     accelerator = Accelerator(mixed_precision="bf16", kwargs_handlers=kwargs_handlers)  
     if load_in_8bit:

@@ -57,7 +57,7 @@ tmp/*
 *.parquet
 
 *.ipynb
-
+output/
+PBS_run.sh.*
 benchmark/HumanEval/human_eval/rust/*
-
 output

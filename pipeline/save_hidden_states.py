@@ -226,7 +226,7 @@ def main(overwrite=False, continue_from=None, parallel:int=None):
             json.dump(args.__dict__, f)
     print(f'Generating {args.num_generations_per_prompt} generations per prompt for {model_name} on {args.dataset}...')
     print(f"Saving to {os.path.join(cache_dir, f'{run_id}.pkl')}")
-    temp_dir = os.path.join(cache_dir,'temp')
+    temp_dir = os.path.join(cache_dir,'temp2')
     if not os.path.exists(temp_dir):
         os.makedirs(temp_dir)
     get_generations(model_name, args, seed=args.seed, old_sequences=old_sequences,cache_dir=temp_dir)

@@ -10,8 +10,8 @@ import os
 from benchmark.HumanEval.human_eval.evaluation import evaluate_functional_correctness_each_sample, evaluate_functional_correctness
 
 
-data_root = "benchmark/HumanEval/data"
-continue_from = '/drive2/tuandung/WCODELLM/human_eval_result/deepseek-6.7b/go-1/human_eval_go_deepseek_6.7b_last_token_-1.parquet'
+data_root = "/home/trang-n/WCODELLM_MULTILANGUAGE/benchmark/HumanEval/data"
+continue_from = '/home/trang-n/WCODELLM_MULTILANGUAGE/output/1731338674896_deepseek-ai_deepseek-coder-6.7b-base_human_eval_java_-1_-2/0.pkl'
 kwargs_handlers = [DistributedDataParallelKwargs(find_unused_parameters=True)]
 accelerator = Accelerator(mixed_precision="bf16", kwargs_handlers=kwargs_handlers)
 model_name = 'deepseek-ai/deepseek-coder-6.7b-base'
@@ -21,9 +21,11 @@ tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 sequences = pd.read_parquet(continue_from).to_dict(orient='records')
 
 print(f'Loaded {len(sequences)} indices')
-batch_size = 1
-language = 'go'
+batch_size = 8
+language = 'java'
 log_dir = 'tmp/humaneval'
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
 
 test_run_results = []
 totalnum = len(sequences) * len(sequences[0]['generations_ids'])
@@ -59,7 +61,7 @@ for idx in tqdm(range(0, len(sequences), batch_size)):
             tmpfile.write(json.dumps(res) + "\n")
             tmpfile.flush()
             currentnum += 1
-    results = evaluate_functional_correctness_each_sample(input_file=log_file, problem_file=os.path.join(data_root, f"humaneval-{language}.jsonl"), tmp_dir=log_dir, timeout=timeout, language=runlang, n_workers=1)
+    results = evaluate_functional_correctness_each_sample(input_file=log_file, problem_file=os.path.join(data_root, f"humaneval-{language}.jsonl"), tmp_dir=log_dir, timeout=timeout, language=runlang, n_workers=8)
 
     
     # print("Prompt", batch_lines[0]['prompt'])

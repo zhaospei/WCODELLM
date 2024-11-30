@@ -68,6 +68,7 @@ def _save_dataset(language, sft=False, instruction=False):
         dataset["stopwords"] = []
         
         if instruction:
+            # prompt = build_deepseekcoder_instruction(languge_settings[language]['full_name'], sample['prompt'])
             for sample in data:
                 prompt = build_deepseekcoder_instruction(languge_settings[language]['full_name'], sample['prompt'])
                 dataset["prompt"].append(prompt)

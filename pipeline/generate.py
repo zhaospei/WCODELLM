@@ -5,6 +5,7 @@ import os
 import copy
 import time
 import gc
+import pickle
 import pandas as pd
 import torch
 import tqdm
@@ -155,6 +156,8 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             continue # generated
         # print(f"Batch {batch_idx} | Task ID: {batch['task_id']}")
         # print(batch)
+        if os.path.exists(out_dir_task_id):
+            continue # generated
         input_ids = batch['input_ids'].to(device)
         # print(f"input_ids: {input_ids}")
         print(f"input_ids shape: {input_ids.shape}")
@@ -163,6 +166,8 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         if input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9:
             continue
         input_length = input_ids.shape[1]
+        if input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9:
+            continue
         torch.cuda.empty_cache()
         
         generations = []
@@ -231,9 +236,9 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         print("AnswerGT:", batch['canonical_solution'][0], file=logInfo)
         print("MostLikelyAns:", tokenizer.decode(curr_seq['generations_ids'][0], skip_special_tokens=True), file=logInfo)
         print("\n","\n","\n", file=logInfo)
-        # sequences.append(curr_seq)
+        sequences.append(curr_seq)
         
-        pickle.dump(curr_seq,open(out_dir_task_id,'wb'))
+        # pickle.dump(curr_seq,open(out_dir_task_id,'wb'))
         
         torch.cuda.empty_cache()
     return sequences
@@ -375,6 +380,9 @@ def main(overwrite=False, continue_from=None, parallel:int=None):
         run_id = len(old_results)
         with open(os.path.join(OUTPUT_DIR, f'args{run_id}.json'), 'w') as f:
             json.dump(args.__dict__, f)
+    temp_dir = os.path.join(cache_dir,'temp')
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
     print(f'Generating {args.num_generations_per_prompt} generations per prompt for {model_name} on {args.dataset}...')
     print(f"Saving to {os.path.join(cache_dir, f'{run_id}.pkl')}")
     temp_dir = os.path.join(cache_dir,'temp')
