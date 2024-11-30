@@ -355,6 +355,7 @@ def evaluate_functional_correctness_each_sample(
                 tmp_dir_ = os.path.join(tmp_dir, lang, "evaluation")
                 sample["task_id"] = task_id
                 sample["test_code"] = process_humaneval_test(sample, problems, example_test, is_mbpp, language)
+                # print(sample["test_code"])
                 if sample["test_code"] is None:
                     continue
                 if "completion_id" in sample:

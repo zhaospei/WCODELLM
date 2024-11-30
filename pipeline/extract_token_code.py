@@ -12,6 +12,7 @@ import dataeval.w_ds1000 as ds1000
 import dataeval.w_repoeval as repo_eval
 from dataeval.w_humaneval import extract_generation_code as human_eval_egc
 from dataeval.w_mbpp import extract_generation_code as mbpp_eval_egc
+from dataeval.w_ds1000 import extract_generation_code as ds1000_eval_egc
 from func.metric import *
 
 
@@ -40,7 +41,7 @@ def extract_generation_code_fun(data_name):
     if data_name == 'mbpp':
         return mbpp_eval_egc
     if data_name == 'ds1000':
-        return None
+        return ds1000_eval_egc
     if data_name == 'repo_eval':
         return None
 
@@ -73,7 +74,7 @@ def main():
         for example in tqdm.tqdm(dataset, total=len(dataset)):
             has_error = False
             task_id_path =  str(example['task_id']).replace('/','_').replace('[','_').replace(']','_')
-            if args.dataset == 'mbpp':
+            if args.dataset == 'mbpp' or args.dataset == 'ds1000':
                 task_id_path = f'tensor({task_id_path})'
             task_generation_seqs_path = f'generation_sequences_output_{task_id_path}.pkl'
             task_generation_seqs_path = os.path.join(args.generate_dir, task_generation_seqs_path)
