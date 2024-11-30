@@ -1,0 +1,2 @@
+text = """import random\nimport sys\nfrom abc import abstractmethod, abstractstaticmethod\nfrom typing import Any, Callable, Dict, Iterable\n\nfrom torch.utils.data import DataLoader, Dataset\n\nfrom trlx.data import GeneralElement, RLElement\n\n# specifies a dictionary of architectures\n_DATAPIPELINE: Dict[str, any] = {}  # registry\n\n\ndef register_datapipeline(name):\n    \"\"\"Decorator used register a CARP architecture\n    Args:\n        name: Name of the architecture\n    \"\"\""""
+print(text)

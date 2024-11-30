@@ -150,7 +150,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                 for ind in range(hidden_states[1][-1].shape[0]):
                     all_token_hidden_states_layer[ind] = []
                     for hidden_state in hidden_states[1:]:
-                        all_token_hidden_states_layer[ind].append(hidden_state[layer][:, -1, :].detach().cpu().float().numpy())
+                        all_token_hidden_states_layer[ind].append(hidden_state[layer][ind, -1, :].detach().cpu().float().numpy())
                 all_token_hidden_states_layer_list[layer] = all_token_hidden_states_layer
             # return hidden_state
             
@@ -226,7 +226,7 @@ def main(overwrite=False, continue_from=None, parallel:int=None):
             json.dump(args.__dict__, f)
     print(f'Generating {args.num_generations_per_prompt} generations per prompt for {model_name} on {args.dataset}...')
     print(f"Saving to {os.path.join(cache_dir, f'{run_id}.pkl')}")
-    temp_dir = os.path.join(cache_dir,'temp')
+    temp_dir = os.path.join(cache_dir,'temp2')
     if not os.path.exists(temp_dir):
         os.makedirs(temp_dir)
     get_generations(model_name, args, seed=args.seed, old_sequences=old_sequences,cache_dir=temp_dir)

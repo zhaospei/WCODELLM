@@ -56,6 +56,8 @@ Please continue to complete the function. You are not allowed to modify the give
 
 def _save_dataset(language, sft=False, instruction=False):
     save_path = f"{DATASET_ROOT}/{language}" if not sft else f"{DATASET_ROOT}/{language}_sft"
+    save_path = f"{save_path}_instruction" if instruction else save_path
+
     if not os.path.exists(save_path):
         data = HumanEvalDataset(root=DATASET_ROOT, language=language, issft=sft)
         dataset = {}
@@ -66,8 +68,9 @@ def _save_dataset(language, sft=False, instruction=False):
         dataset["stopwords"] = []
         
         if instruction:
-            prompt = build_deepseekcoder_instruction(languge_settings[language]['full_name'], sample['prompt'])
+            # prompt = build_deepseekcoder_instruction(languge_settings[language]['full_name'], sample['prompt'])
             for sample in data:
+                prompt = build_deepseekcoder_instruction(languge_settings[language]['full_name'], sample['prompt'])
                 dataset["prompt"].append(prompt)
                 dataset["task_id"].append(sample["task_id"])
                 dataset["original_prompt"].append(sample["original_prompt"])
@@ -90,7 +93,7 @@ def _save_dataset(language, sft=False, instruction=False):
 # _save_dataset(sft=False)
 
 def get_dataset(tokenizer, language, sft=False, instruction=False):
-    dataset = datasets.load_from_disk(_save_dataset(language, sft))
+    dataset = datasets.load_from_disk(_save_dataset(language, sft, instruction))
 
     def encode_humaneval(example):
         prompt = example['prompt']
