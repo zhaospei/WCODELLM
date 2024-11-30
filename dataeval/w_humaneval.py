@@ -175,6 +175,7 @@ def extract_generation_code(example, output, lang_code: str, verbose: bool=False
     try:
         # print(output)
         code_block: str = re.findall(f'```{lang.lower()}\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+        # print(code_block)
 
         # Remove main
         if setting.get('main', None) and setting['main'] in code_block:
@@ -201,12 +202,15 @@ def extract_generation_code(example, output, lang_code: str, verbose: bool=False
             except:
                 end = len(code_block)
 
+        # print(len(code_block), start, end)
         body = code_block[start:end]
 
         if lang_code.lower() in ['php', 'ts', 'js']:
             body += '\n' + ' '*indent + '}'
 
-        generation = func_prefix + '\n' + body + '\n'
+        # generation = func_prefix + '\n' + body + '\n'
+        generation = body
+        # print(f"Function Prefix: {func_prefix}")
         # example['generation'] = generation
 
     except Exception as ex:
@@ -216,4 +220,5 @@ def extract_generation_code(example, output, lang_code: str, verbose: bool=False
         # example['generation'] = example['prompt'] + '\n' + output
         generation = output
 
+    # print(f'Generation: {generation}')
     return generation

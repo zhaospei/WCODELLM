@@ -67,8 +67,10 @@ def main():
             "last_token_embedding",
             "first_token_code_embedding",
             "last_token_code_embedding",
+            "has_error"
         ])
         for example in tqdm.tqdm(dataset, total=len(dataset)):
+            has_error = False
             task_id_path =  str(example['task_id']).replace('/','_').replace('[','_').replace(']','_')
             task_generation_seqs_path = f'generation_sequences_output_{task_id_path}.pkl'
             task_generation_seqs_path = os.path.join(args.generate_dir, task_generation_seqs_path)
@@ -85,7 +87,8 @@ def main():
                 clean_generation_decoded = dataset_egc(example, gen, args.language)
                 start_ind, end_ind = getCleanGenerationRange(generated_ids.tolist(), clean_generation_decoded, tokenizer)
                 if start_ind is None or end_ind is None:
-                    print(f'{gen} -> {clean_generation_decoded}')
+                    has_error = True
+                    print(f'Cannot find clean generation range for {task_id_path}')
                     clean_generations_range.append(getGenerationRange(generated_ids.tolist(), tokenizer))
                 else:
                     clean_generations_range.append((start_ind, end_ind))
@@ -125,6 +128,7 @@ def main():
                         "last_token_embedding": last_token_embedding,
                         "first_token_code_embedding": first_token_code_embedding,
                         "last_token_code_embedding": last_token_code_embedding,
+                        "has_error": has_error
                     }, 
                     ignore_index=True)
                 except:
