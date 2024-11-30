@@ -92,8 +92,10 @@ def extract_generation_code(example: str, lang_code: str, verbose: bool=False):
 
         if lang_code.lower() in ['php', 'ts', 'js']:
             body += '\n' + ' '*indent + '}'
-    
+
+        print("body: ", body)
         generation = func_prefix + '\n' + body + '\n'
+        print("generation: ", generation)
         example['generation'] = generation
 
     except Exception as ex:

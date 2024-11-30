@@ -39,7 +39,7 @@ def _save_dataset(language, sft=False):
 # _save_dataset(sft=False)
 
 def get_dataset(tokenizer, language, sft=False, instruction=False):
-    dataset = datasets.load_from_disk(_save_dataset(language, sft))
+    dataset = datasets.load_from_disk(_save_dataset(language, sft, instruction))
 
     def encode_humaneval(example):
         prompt = example['prompt']

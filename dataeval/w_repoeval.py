@@ -29,7 +29,8 @@ def _save_dataset(language, sft=False):
         dataset["stopwords"] = []
         
         for idx, sample in enumerate(lines):
-            dataset["prompt"].append(sample["prompt"] + '\n# Complete the body of the unfinished function:\n')
+            # dataset["prompt"].append(sample["prompt"] + '\n# Complete the body of the unfinished function:\n')
+            dataset["prompt"].append(sample["prompt"])
             dataset["task_id"].append(sample["metadata"]["task_id"] + f"_{idx}")
             dataset["original_prompt"].append(sample["prompt"])
             dataset["canonical_solution"].append(sample["metadata"]["ground_truth"])
@@ -44,7 +45,7 @@ def _save_dataset(language, sft=False):
 # _save_dataset(sft=False)
 
 def get_dataset(tokenizer, language, sft=False, instruction=False):
-    dataset = datasets.load_from_disk(_save_dataset(language, sft))
+    dataset = datasets.load_from_disk(_save_dataset(language, sft, instruction))
 
     def encode_humaneval(example):
         prompt = example['prompt']

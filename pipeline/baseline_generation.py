@@ -8,6 +8,7 @@ import pandas as pd
 
 import datasets
 import dataeval.w_mbpp as mbpp
+import dataeval.w_repoeval as repo_eval
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -51,27 +52,17 @@ df = pd.read_parquet("/drive2/tuandung/WCODELLM/mbpp_result/mbpp_deepseek_6.7b_l
 df_test_dict = df[~df['task_id'].isin(train_task_ids)].to_dict(orient='records')
 
 def build_prompt(Query):
-    return f"Are you capable of providing an accurate response to the query given above? Respond only to this question with ’yes’ or ’no’ and do not address the content of the query itself.\n\n Query: {Query}\nAnswer: "
+    return f"Are you capable of providing an accurate response to the query given below? Respond only to this question with ’yes’ or ’no’ and do not address the content of the query itself. The query start with 'Query:' and your respone after 'Answer'. \n\n Query: {Query}\n\n. Are you capable of providing an accurate response to the query given above without more information? Respond only to this question with yes or no. \nAnswer: "
 # \n\nQuery: Write a function to find the similar elements from the given two tuple lists. \nAnswer: yes
-mbpp_ds = datasets.load_from_disk(mbpp._save_dataset(tokenizer, max_seq_len=4096, max_gen_len=500))
+repoeval_ds = repo_eval.get_dataset(tokenizer, "python", sft=False, instruction=True)
 
 # Apply padding on the left since we are doing generation
 padding_side_default = tokenizer.padding_side
 tokenizer.padding_side = "left"
 
-for dt in df_test_dict:
-    ok = False
-    for mbpp in mbpp_ds:
-        if dt['task_id'] == mbpp['task_id']:
-            prompt = build_prompt(mbpp['original_prompt'])
-            ok = True
-            break
-    if not ok:
-        print(f"Task {dt['task_id']} not found in MBPP dataset")
-        continue
-    dt['prompt'] = prompt
+baseline_prompts = [build_prompt("\nComplete the body of the unfinished function: \n" + prompt) for prompt in repoeval_ds['prompt']]
 
-df_test = pd.DataFrame(df_test_dict)
+# df_test = pd.DataFrame(df_test_dict)
 
 # Tokenize each batch
 # Put back the original padding behavior
@@ -86,20 +77,20 @@ generation_config = {
 
 generated_texts = []
 
-with tqdm(total=len(df_test)) as pbar:
-    for _, row in df_test.iterrows():
-        prompt = build_prompt(row['prompt'])
-        tokenized_prompt = tokenizer(prompt, padding=True,
-                                     return_tensors="pt").to("cuda")
-        with torch.no_grad():
-            outputs = model.generate(
-                **tokenized_prompt,
-                **generation_config
-            )
-        generated_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-        pbar.update(1)
-        print(generated_text)
-        generated_texts.append(generated_text)
+# with tqdm(total=len(df_test)) as pbar:
+for prompt in tqdm(baseline_prompts):
+    # prompt = build_prompt(p)
+    tokenized_prompt = tokenizer(prompt, padding=True,
+                                    return_tensors="pt").to("cuda")
+    with torch.no_grad():
+        outputs = model.generate(
+            **tokenized_prompt,
+            **generation_config
+        )
+    generated_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+    # pbar.update(1)
+    print(generated_text)
+    generated_texts.append(generated_text[0])
 
 with open("abc.txt", "w") as f:
     for text in generated_texts:
