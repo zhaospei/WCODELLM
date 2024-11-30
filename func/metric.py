@@ -10,9 +10,27 @@ from selfcheckgpt.modeling_selfcheck import SelfCheckBERTScore
 ###### 导入ROUGE评估函数计算ROUGE-L指标
 rougeEvaluator = rouge_scorer.RougeScorer(["rouge1", "rouge2", "rougeL"], use_stemmer=True)
 
-def getCleanGenerationRange(generated_text, clean_text, tokenizer):
-    tokenized_generated_text = tokenizer.tokenize(generated_text, add_special_tokens=False)
-    tokenized_clean_text = tokenizer.tokenize(clean_text, add_special_tokens=False)
+def getGenerationRange(generated_ids, tokenizer, passed_first_token=False):
+    if passed_first_token:
+        start_ind = 1
+    else:
+        start_ind = 0
+    
+    try:
+        end_ind = generated_ids.index(tokenizer.eos_token_id)
+    except:
+        end_ind = len(generated_ids)
+    
+    return start_ind, end_ind
+
+def getCleanGenerationRange(tokenized_generated_text, clean_text, tokenizer):
+    # tokenized_generated_text = tokenizer.tokenize(generated_text, add_special_tokens=False)
+    # print(tokenized_generated_text)
+    # print(clean_text)
+    
+    clean_text = clean_text.strip()
+    tokenized_clean_text = tokenizer(clean_text, add_special_tokens=False)['input_ids']
+    # print(tokenized_clean_text)
     start_ind = -1
     for i in range(len(tokenized_generated_text) - len(tokenized_clean_text) + 1):
         if tokenized_generated_text[i:i+len(tokenized_clean_text)] == tokenized_clean_text:

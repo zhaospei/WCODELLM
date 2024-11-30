@@ -19,7 +19,7 @@ import dataeval.w_humaneval as human_eval
 import dataeval.w_mbpp as mbpp
 import dataeval.w_ds1000 as ds1000
 import dataeval.w_repoeval as repo_eval
-from dataeval.w_humaneval import extract_generation_code as human_eval_egc
+from dataeval.w_humaneval import cleanup_code as human_eval_cleanup_code
 import models
 import utils
 from func.metric import *
@@ -77,28 +77,17 @@ def get_dataset_fn(data_name):
     if data_name == 'repo_eval':
         return repo_eval.get_dataset
 
-def extract_generation_code_fun(data_name):
-    if data_name == 'human_eval':
-        return human_eval_egc
-    if data_name == 'mbpp':
-        return None
-    if data_name == 'ds1000':
-        return None
-    if data_name == 'repo_eval':
-        return None
 
 @torch.no_grad()
 def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_gen_once=args.num_generations_per_prompt,cache_dir='output'):
     device = args.device
-    model, tokenizer = models.load_model_and_tokenizer(model_name, args.device, args.load_in_8bit)  
-    model.eval()  
+    model, tokenizer = models.load_model_and_tokenizer(model_name, args.device, args.load_in_8bit)    
     utils.seed_everything(seed)
     if 'chat' or 'instruct' in model_name.lower():
         instruction = True
     else:
         instruction = False
     dataset = get_dataset_fn(args.dataset)(tokenizer, language=args.language, instruction=instruction)
-    dataset_egc = extract_generation_code_fun(args.dataset)
     if hasattr(dataset[0],'stopwords'):
         stop_words = dataset[0]['stopwords']
     else:
@@ -127,8 +116,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
 
         input_ids = batch['input_ids'].to(device)
         print(f"input_ids shape: {input_ids.shape}")
-        
-        if args.dataset != 'repo_eval' and (input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9):
+        if input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9:
             continue
         input_length = input_ids.shape[1]
         torch.cuda.empty_cache()
@@ -145,7 +133,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                             # temperature=args.temperature, 
                             eos_token_id=tokenizer.eos_token_id,
                             pad_token_id=tokenizer.eos_token_id,
-                            output_hidden_states = True, return_dict_in_generate=True, output_scores=True, output_attentions=True,
+                            output_hidden_states = True, return_dict_in_generate=True, output_scores=True
                             )
             print(dict_outputs.keys())
             generation = dict_outputs.sequences[:, input_length:].cpu()
@@ -153,41 +141,21 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             for gen in generation:
                 generations.append(gen)
             
-            for gen_ids in generations:
-                generations_decoded.append(tokenizer.decode(gen_ids, skip_special_tokens=True))
-            
-            clean_generations_range = []
-            for gen in generations_decoded:
-                clean_generation_decoded = dataset_egc(batch, gen, args.language)
-                start_ind, end_ind = getCleanGenerationRange(gen, clean_generation_decoded, tokenizer)
-                if start_ind is None or end_ind is None:
-                    print(f'{gen} -> {clean_generation_decoded}')
-                else:
-                    clean_generations_range.append((start_ind, end_ind))
-            print(len(dict_outputs.attentions))  
-            print(dict_outputs.attentions[0][0].shape)
-            print(dict_outputs.attentions[0][1].shape)
-            print(dict_outputs.attentions[0][2].shape)
-            print(dict_outputs.attentions[1][0].shape) 
-            print(dict_outputs.attentions[1][1].shape)    
-            print(dict_outputs.attentions[2][2].shape)     
             layers_to_process = args.layers
             hidden_states = dict_outputs.hidden_states
             ###### hidden_states : (num_tokens, num_layers, num_seq, num_input_tokens/1, embedding_size)
             all_token_hidden_states_layer_list = {}
             for layer in layers_to_process:
                 all_token_hidden_states_layer = {}
-                for ind, (start_ind, end_ind) in enumerate(clean_generations_range):
-                # for ind in range(hidden_states[1][-1].shape[0]):
+                for ind in range(hidden_states[1][-1].shape[0]):
                     all_token_hidden_states_layer[ind] = []
-                    for ind1 in range(start_ind, end_ind): 
-                    # for hidden_state in hidden_states[1:]:
-                        all_token_hidden_states_layer[ind].append(hidden_states[ind1][layer][ind, -1, :].detach().cpu().float().numpy())
+                    for hidden_state in hidden_states[1:]:
+                        all_token_hidden_states_layer[ind].append(hidden_state[layer][ind, -1, :].detach().cpu().float().numpy())
                 all_token_hidden_states_layer_list[layer] = all_token_hidden_states_layer
             # return hidden_state
             
-            # for gen_ids in generations:
-            #     generations_decoded.append(tokenizer.decode(gen_ids, skip_special_tokens=True))
+            for gen_ids in generations:
+                generations_decoded.append(tokenizer.decode(gen_ids, skip_special_tokens=True))
                 
             del dict_outputs
             gc.collect()
@@ -220,16 +188,15 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             )
         pd.to_pickle(generation_sequences_output, os.path.join(cache_dir, f'generation_sequences_output_{task_id_path}.pkl'))
         
-        # print("Prompt:", tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True))
-        # print("Problem:", batch['original_prompt'][0])
-        # print("AnswerGT:", batch['canonical_solution'][0])
-        # print("MostLikelyAns:", generations_decoded[0])
-        # print("MostLikelyCleanedAns:", dataset_egc(batch, generations_decoded[0], args.language))
+        print("Prompt:", tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True))
+        print("Problem:", batch['original_prompt'][0])
+        print("AnswerGT:", batch['canonical_solution'][0])
+        print("MostLikelyAns:", generations_decoded[0])
         
-        # print("Prompt:", tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True), file=logInfo)
-        # print("Problem:", batch['original_prompt'][0], file=logInfo)
-        # print("AnswerGT:", batch['canonical_solution'][0], file=logInfo)
-        # print("MostLikelyAns:", generations_decoded[0], file=logInfo)
+        print("Prompt:", tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True), file=logInfo)
+        print("Problem:", batch['original_prompt'][0], file=logInfo)
+        print("AnswerGT:", batch['canonical_solution'][0], file=logInfo)
+        print("MostLikelyAns:", generations_decoded[0], file=logInfo)
         
         print("\n","\n","\n", file=logInfo)
         

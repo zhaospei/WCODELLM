@@ -164,9 +164,9 @@ def get_function_name(question: str, lang: str):
     return func_name, func_prefix
 
 def extract_generation_code(example, output, lang_code: str, verbose: bool=False):
-    task_id = example['task_id'][0]
+    task_id = example['task_id']
     # output = example.get('output', example.get("gpt_completion"))
-    question = example["original_prompt"][0].strip()
+    question = example["original_prompt"].strip()
     setting = languge_settings[lang_code]
     lang = setting['full_name']
     indent = setting['indent']
