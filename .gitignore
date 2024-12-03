@@ -62,3 +62,4 @@ PBS_run.sh.*
 benchmark/HumanEval/human_eval/rust/*
 output
 _settings.py
+*.txt

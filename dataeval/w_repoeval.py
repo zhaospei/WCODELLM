@@ -8,6 +8,14 @@ import json
 DATASET_ROOT= os.path.join(_settings.DATA_FOLDER, "RepoEval", "datasets")
 STOP_WORDS = ["\nclass", "\ndef", "\n#", "\n@", "\nprint", "\nif", "\n```", "<file_sep>"]
 
+def build_deepseekcoder_instruction(languge: str, question: str):
+    return '''
+Please continue to complete the function. You are not allowed to modify the given code and do the completion only. Please return all completed function in a codeblock. Here is the given code to do completion:
+```{}
+{}
+```
+'''.strip().format(languge.lower(), question.strip())
+
 def load_jsonl(fname):
     with open(fname, 'r', encoding='utf8') as f:
         lines = []
@@ -16,8 +24,10 @@ def load_jsonl(fname):
         return lines
 
 
-def _save_dataset(language, sft=False):
+def _save_dataset(language, sft=False, instruction=False):
     save_path = f"{DATASET_ROOT}/{language}" if not sft else f"{DATASET_ROOT}/{language}_sft"
+    save_path = f"{save_path}_instruction" if instruction else save_path
+    
     if not os.path.exists(save_path):
         data_path = os.path.join(DATASET_ROOT, "function_level_completion_2k_context_codex.test.jsonl")
         lines = load_jsonl(data_path)
@@ -27,15 +37,26 @@ def _save_dataset(language, sft=False):
         dataset["original_prompt"] = []
         dataset["canonical_solution"] = []
         dataset["stopwords"] = []
-        
-        for idx, sample in enumerate(lines):
-            # dataset["prompt"].append(sample["prompt"] + '\n# Complete the body of the unfinished function:\n')
-            dataset["prompt"].append(sample["prompt"])
-            dataset["task_id"].append(sample["metadata"]["task_id"] + f"_{idx}")
-            dataset["original_prompt"].append(sample["prompt"])
-            dataset["canonical_solution"].append(sample["metadata"]["ground_truth"])
-            dataset["stopwords"].append(STOP_WORDS)
-        
+        if instruction:
+            for idx, sample in enumerate(lines):
+                # dataset["prompt"].append(sample["prompt"] + '\n# Complete the body of the unfinished function:\n')
+                # dataset["prompt"].append(sample["prompt"])
+                prompt = build_deepseekcoder_instruction('python', sample['prompt'])
+                dataset["prompt"].append(prompt)
+                dataset["stopwords"].append(sample["stopwords"])
+                dataset["task_id"].append(sample["metadata"]["task_id"] + f"_{idx}")
+                dataset["original_prompt"].append(sample["prompt"])
+                dataset["canonical_solution"].append(sample["metadata"]["ground_truth"])
+                dataset["stopwords"].append(STOP_WORDS)
+        else:
+            for idx, sample in enumerate(lines):
+                # dataset["prompt"].append(sample["prompt"] + '\n# Complete the body of the unfinished function:\n')
+                dataset["prompt"].append(sample["prompt"])
+                dataset["task_id"].append(sample["metadata"]["task_id"] + f"_{idx}")
+                dataset["original_prompt"].append(sample["prompt"])
+                dataset["canonical_solution"].append(sample["metadata"]["ground_truth"])
+                dataset["stopwords"].append(STOP_WORDS)
+            
         data_df = pd.DataFrame.from_dict(dataset)
         dataset = Dataset.from_pandas(data_df)
         
@@ -43,13 +64,15 @@ def _save_dataset(language, sft=False):
     return save_path
 
 # _save_dataset(sft=False)
-
 def get_dataset(tokenizer, language, sft=False, instruction=False):
     dataset = datasets.load_from_disk(_save_dataset(language, sft, instruction))
 
     def encode_humaneval(example):
         prompt = example['prompt']
-        return tokenizer(prompt, truncation=False, padding=False)
+        if instruction:
+            prompt = tokenizer.apply_chat_template([{"role": "user", "content": f'{prompt}'}], tokenize=False, add_generation_prompt=True)
+        inputs = tokenizer(prompt, truncation=False, padding=False)
+        return inputs
 
     dataset = dataset.map(encode_humaneval, batched=False, load_from_cache_file=False)
     dataset.set_format(type='torch', columns=['input_ids', 'attention_mask'], output_all_columns=True)

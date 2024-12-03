@@ -1,2 +1,26 @@
-prompt = "\n\ndef encode_cyclic(s: str):\n    \"\"\"\n    returns encoded string by cycling groups of three characters.\n    \"\"\"\n    # split string to groups. Each of length 3.\n    groups = [s[(3 * i):min((3 * i + 3), len(s))] for i in range((len(s) + 2) // 3)]\n    # cycle elements in each group. Unless group has fewer elements than 3.\n    groups = [(group[1:] + group[0]) if len(group) == 3 else group for group in groups]\n    return \"\".join(groups)\n\n\ndef decode_cyclic(s: str):\n    \"\"\"\n    takes as input string encoded with encode_cyclic function. Returns decoded string.\n    \"\"\"\n"
-print(prompt)
+from sklearn.metrics import accuracy_score
+
+# true_labels = [test_dict['label'] for test_dict in df_test_dict
+true_labels = []
+for i in range(768):
+    true_labels.append(0)
+
+for i in range(872):
+    true_labels.append(1)
+
+
+
+predictions = []
+for range in range(1640):
+    predictions.append(0)
+# for text in generated_texts:
+#     if 'yes' in text or 'Yes' in text:
+#         predictions.append(1)
+#     else:
+#         predictions.append(0)
+
+print(sum(predictions))
+
+accuracy = accuracy_score(true_labels, predictions)
+from sklearn.metrics import classification_report
+print(classification_report(true_labels, predictions))

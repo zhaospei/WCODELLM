@@ -133,10 +133,11 @@ def get_dataset(tokenizer, language='python', instruction=False, max_seq_len=204
     dataset = datasets.load_from_disk(_save_dataset(tokenizer, max_seq_len, max_gen_len, instruction))
     
     def encode_mbpp(example):
-        tokenized_prompt = tokenizer(example['prompt'], truncation=False, padding=False)
-        inputids = tokenized_prompt["input_ids"][-max_seq_len:]
-        attenion_mask = tokenized_prompt["attention_mask"][-max_seq_len:]
-        return dict(input_ids=inputids, attention_mask=attenion_mask)
+        prompt = example['prompt']
+        if instruction:
+            prompt = tokenizer.apply_chat_template([{"role": "user", "content": f'{prompt}'}], tokenize=False, add_generation_prompt=True)
+        inputs = tokenizer(prompt, truncation=False, padding=False)
+        return inputs
         # return tokenized_prompt
 
     dataset = dataset.map(encode_mbpp, batched=False, load_from_cache_file=False)

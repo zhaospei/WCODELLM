@@ -83,6 +83,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
     device = args.device
     model, tokenizer = models.load_model_and_tokenizer(model_name, args.device, args.load_in_8bit)    
     utils.seed_everything(seed)
+    model.eval()
     if 'chat' or 'instruct' in model_name.lower():
         instruction = True
     else:
