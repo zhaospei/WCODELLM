@@ -25,7 +25,7 @@ def getGenerationRange(generated_ids, tokenizer, passed_first_token=False):
 
 def getCleanGenerationRange(tokenized_generated_text, clean_text, tokenizer):
     try:
-        tokenized_generated_text = tokenized_generated_text[:tokenized_generated_text.index(tokenizer.eos_token_id)]
+        tokenized_generated_text = tokenized_generated_text[:tokenized_generated_text.index(tokenizer.eos_token_id) + 1]
     except:
         pass
     tokenized_clean_text = tokenizer(clean_text, add_special_tokens=False)['input_ids']
@@ -39,11 +39,12 @@ def getCleanGenerationRange(tokenized_generated_text, clean_text, tokenizer):
         hi = len(tokenized_generated_text)
         if start_ind is not None:
             break
-        while lo < hi:
+        while lo <= hi:
             mid = (lo + hi) // 2
             sub_generated_text = tokenizer.decode(tokenized_generated_text[i:mid], skip_special_tokens=True)
             sub_generated_text = sub_generated_text.strip()
-            # print(i, mid, sub_generated_text)
+            # if i == 121:
+                # print(i, mid, sub_generated_text)
             if sub_generated_text == clean_text:
                 start_ind = i
                 end_ind = mid
