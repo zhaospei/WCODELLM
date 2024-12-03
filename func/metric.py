@@ -24,10 +24,10 @@ def getGenerationRange(generated_ids, tokenizer, passed_first_token=False):
     return start_ind, end_ind
 
 def getCleanGenerationRange(tokenized_generated_text, clean_text, tokenizer):
-    # try:
-    tokenized_generated_text = tokenized_generated_text[:tokenized_generated_text.index(tokenizer.eos_token_id)]
-    # except:
-    #     pass
+    try:
+        tokenized_generated_text = tokenized_generated_text[:tokenized_generated_text.index(tokenizer.eos_token_id)]
+    except:
+        pass
     tokenized_clean_text = tokenizer(clean_text, add_special_tokens=False)['input_ids']
     # print(tokenized_generated_text)
     # print(tokenized_clean_text)
