@@ -130,9 +130,9 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             dict_outputs =  model.generate(input_ids, attention_mask=batch['attention_mask'].to(device),
                             num_beams=1, max_new_tokens=args.max_new_tokens, num_return_sequences=min(max_num_gen_once, num_gens),
                             do_sample=True, 
-                            # top_p=args.top_p, 
-                            # top_k=args.top_k,
-                            # temperature=args.temperature, 
+                            top_p=args.top_p, 
+                            top_k=args.top_k,
+                            temperature=args.temperature, 
                             eos_token_id=tokenizer.eos_token_id,
                             pad_token_id=tokenizer.eos_token_id,
                             output_hidden_states = True, return_dict_in_generate=True, output_scores=True

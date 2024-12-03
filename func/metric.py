@@ -28,19 +28,36 @@ def getCleanGenerationRange(tokenized_generated_text, clean_text, tokenizer):
     # print(tokenized_generated_text)
     # print(clean_text)
     
-    # clean_text = clean_text.strip()
-    tokenized_clean_text = tokenizer(clean_text, add_special_tokens=False)['input_ids']
-    # print(tokenized_clean_text)
-    start_ind = -1
-    for i in range(len(tokenized_generated_text) - len(tokenized_clean_text) + 1):
-        if tokenized_generated_text[i:i+len(tokenized_clean_text)] == tokenized_clean_text:
-            start_ind = i
-            break
+    clean_text = clean_text.strip()
+    start_ind, end_ind = None, None
+    for i in range(len(tokenized_generated_text)):
+        lo = i + 1
+        hi = len(tokenized_generated_text)
+        while lo < hi:
+            mid = (lo + hi) // 2
+            sub_generated_text = tokenizer.decode(tokenized_generated_text[i:mid], skip_special_tokens=True)
+            sub_generated_text = sub_generated_text.strip()
+            if sub_generated_text == clean_text:
+                start_ind = i
+                end_ind = mid
+                break
+            if sub_generated_text in clean_text:
+                lo = mid + 1
+            else:
+                hi = mid - 1
     
-    if start_ind == -1:
-        return None, None  # Clean text not found in generated text
+    # tokenized_clean_text = tokenizer(clean_text, add_special_tokens=False)['input_ids']
+    # print(tokenized_clean_text)
+    # start_ind = -1
+    # for i in range(len(tokenized_generated_text) - len(tokenized_clean_text) + 1):
+    #     if tokenized_generated_text[i:i+len(tokenized_clean_text)] == tokenized_clean_text:
+    #         start_ind = i
+    #         break
+    
+    # if start_ind == -1:
+    #     return None, None  # Clean text not found in generated text
         
-    end_ind = start_ind + len(tokenized_clean_text)
+    # end_ind = start_ind + len(tokenized_clean_text)
     
     return start_ind, end_ind
 
