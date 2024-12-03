@@ -92,6 +92,8 @@ def main():
                 start_ind, end_ind = getCleanGenerationRange(generated_ids.tolist(), clean_generation_decoded, tokenizer)
                 if start_ind is None or end_ind is None:
                     has_error = True
+                    print("gen:", gen)
+                    print("clean_generation_decoded:", clean_generation_decoded)
                     print(f'Cannot find clean generation range for {task_id_path}')
                     clean_generations_range.append(getGenerationRange(generated_ids.tolist(), tokenizer))
                 else:

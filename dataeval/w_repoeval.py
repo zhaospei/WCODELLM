@@ -10,7 +10,7 @@ STOP_WORDS = ["\nclass", "\ndef", "\n#", "\n@", "\nprint", "\nif", "\n```", "<fi
 
 def build_deepseekcoder_instruction(languge: str, question: str):
     return '''
-Please continue to complete the function. You are not allowed to modify the given code and do the completion only. Please return all completed function in a codeblock. Here is the given code to do completion:
+Please continue to complete the function. You are not allowed to modify the given code and do the completion only. Please return all completed function in a codeblock. Place the executable code without any other non-executable things. Here is the given code to do completion:
 ```{}
 {}
 ```
@@ -43,7 +43,7 @@ def _save_dataset(language, sft=False, instruction=False):
                 # dataset["prompt"].append(sample["prompt"])
                 prompt = build_deepseekcoder_instruction('python', sample['prompt'])
                 dataset["prompt"].append(prompt)
-                dataset["stopwords"].append(sample["stopwords"])
+                # dataset["stopwords"].append(sample["stopwords"])
                 dataset["task_id"].append(sample["metadata"]["task_id"] + f"_{idx}")
                 dataset["original_prompt"].append(sample["prompt"])
                 dataset["canonical_solution"].append(sample["metadata"]["ground_truth"])

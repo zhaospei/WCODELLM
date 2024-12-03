@@ -28,7 +28,7 @@ def getCleanGenerationRange(tokenized_generated_text, clean_text, tokenizer):
     # print(tokenized_generated_text)
     # print(clean_text)
     
-    clean_text = clean_text.strip()
+    # clean_text = clean_text.strip()
     tokenized_clean_text = tokenizer(clean_text, add_special_tokens=False)['input_ids']
     # print(tokenized_clean_text)
     start_ind = -1

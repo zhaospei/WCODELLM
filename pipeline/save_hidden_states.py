@@ -83,6 +83,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
     device = args.device
     model, tokenizer = models.load_model_and_tokenizer(model_name, args.device, args.load_in_8bit)    
     utils.seed_everything(seed)
+    print(model)
     model.eval()
     if 'chat' or 'instruct' in model_name.lower():
         instruction = True
@@ -117,7 +118,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
 
         input_ids = batch['input_ids'].to(device)
         print(f"input_ids shape: {input_ids.shape}")
-        if input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9:
+        if args.dataset != 'repo_eval' and (input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9):
             continue
         input_length = input_ids.shape[1]
         torch.cuda.empty_cache()
