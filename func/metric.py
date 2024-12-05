@@ -34,6 +34,7 @@ def getCleanGenerationRange(tokenized_generated_text, clean_text, tokenizer):
     # print(clean_text)
     clean_text = clean_text.strip()
     start_ind, end_ind = None, None
+    # print(len(tokenized_generated_text))
     for i in range(len(tokenized_generated_text) - len(tokenized_clean_text) + min(len(tokenized_clean_text) // 2, 50)):
         lo = i + 1
         hi = len(tokenized_generated_text)
@@ -43,8 +44,6 @@ def getCleanGenerationRange(tokenized_generated_text, clean_text, tokenizer):
             mid = (lo + hi) // 2
             sub_generated_text = tokenizer.decode(tokenized_generated_text[i:mid], skip_special_tokens=True)
             sub_generated_text = sub_generated_text.strip()
-            # if i == 121:
-                # print(i, mid, sub_generated_text)
             if sub_generated_text == clean_text:
                 start_ind = i
                 end_ind = mid
@@ -52,7 +51,7 @@ def getCleanGenerationRange(tokenized_generated_text, clean_text, tokenizer):
             if sub_generated_text in clean_text:
                 lo = mid + 1
             else:
-                hi = mid - 1
+                hi = mid - 1            
     
     # tokenized_clean_text = tokenizer(clean_text, add_special_tokens=False)['input_ids']
     # print(tokenized_clean_text)

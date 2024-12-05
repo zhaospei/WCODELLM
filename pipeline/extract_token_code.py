@@ -78,10 +78,13 @@ def main():
                 task_id_path = f'tensor({task_id_path})'
             task_generation_seqs_path = f'generation_sequences_output_{task_id_path}.pkl'
             task_generation_seqs_path = os.path.join(args.generate_dir, task_generation_seqs_path)
-            
+            # print(task_generation_seqs_path)
             if not os.path.exists(task_generation_seqs_path):
                 print(f'File {task_id_path} not found. Skipping...')
                 continue
+            
+            print(f'Found {task_id_path}. Processing...')
+            
             with open(task_generation_seqs_path, 'rb') as f:
                 task_generation_seqs = pickle.load(f)
             
@@ -125,6 +128,7 @@ def main():
                     last_token_embedding = layer_embedding[end_ind - 1].tolist()
                     first_token_code_embedding = layer_embedding[start_code_ind].tolist()
                     last_token_code_embedding = layer_embedding[end_code_ind - 1].tolist()
+                    extracted_code = tokenizer.decode(generated_ids.tolist()[start_code_ind:end_code_ind], skip_special_tokens=True)
                     results = results._append({
                         "task_id": task_id, 
                         "completion_id": completion_id,
@@ -134,7 +138,8 @@ def main():
                         "last_token_embedding": last_token_embedding,
                         "first_token_code_embedding": first_token_code_embedding,
                         "last_token_code_embedding": last_token_code_embedding,
-                        "has_error": has_error
+                        "has_error": has_error,
+                        "extracted_code": extracted_code,
                     }, 
                     ignore_index=True)
                 except:

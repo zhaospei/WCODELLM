@@ -205,8 +205,8 @@ def extract_generation_code(example, output, lang_code: str, verbose: bool=False
         # print(len(code_block), start, end)
         body = code_block[start:end]
 
-        if lang_code.lower() in ['php', 'ts', 'js']:
-            body += '\n' + ' '*indent + '}'
+        # if lang_code.lower() in ['php', 'ts', 'js']:
+        #     body += '\n' + ' '*indent + '}'
 
         # generation = func_prefix + '\n' + body + '\n'
         generation = body

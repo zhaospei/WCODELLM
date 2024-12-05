@@ -6,7 +6,7 @@ from accelerate import DistributedDataParallelKwargs
 import torch
 from transformers import (AutoModelForCausalLM,
                           AutoModelForSequenceClassification, AutoTokenizer,
-                          OPTForCausalLM)
+                          OPTForCausalLM, Qwen2Tokenizer)
 
 from _settings import MODEL_PATH
 

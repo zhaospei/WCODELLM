@@ -61,4 +61,6 @@ output/
 PBS_run.sh.*
 benchmark/HumanEval/human_eval/rust/*
 output
-*.txt
+*.txt\
+vastai/
+vastai/*.zip

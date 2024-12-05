@@ -45,6 +45,7 @@ parser.add_argument("--language", default="python", type=str,)
 parser.add_argument("--load_in_8bit", action="store_true", help="Whether to load the model in 8bit mode")
 
 args = parser.parse_args()
+print(args)
 print(args.model.replace('/', '_'))
 ml_time = int(time.time() * 1000)
 layer_name = '_'.join(str(x) for x in args.layers)
@@ -125,6 +126,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         
         generations = []
         generations_decoded = []
+        # print("Prompt:", tokenizer.decode(input_ids.cpu()[0], skip_special_tokens=True))
         num_gens = args.num_generations_per_prompt
         while num_gens > 0:
             dict_outputs =  model.generate(input_ids, attention_mask=batch['attention_mask'].to(device),

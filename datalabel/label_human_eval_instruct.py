@@ -120,10 +120,11 @@ from benchmark.HumanEval.human_eval.evaluation import evaluate_functional_correc
 
 
 data_root = "/drive2/tuandung/WCODELLM/benchmark/HumanEval/data"
-continue_from = '/drive2/tuandung/WCODELLM/LFCLF_embedding_human_eval_deepseek-ai_deepseek-coder-1.3b-instruct_2.parquet'
+continue_from = '/drive2/tuandung/WCODELLM/vastai/deepseekcoder-6.7b-instruct/human_eval_layers_more/output2/LFCLF_embedding_human_eval_deepseek-ai_deepseek-coder-6.7b-instruct_32.parquet'
 kwargs_handlers = [DistributedDataParallelKwargs(find_unused_parameters=True)]
 accelerator = Accelerator(mixed_precision="bf16", kwargs_handlers=kwargs_handlers)
-model_name = 'deepseek-ai/deepseek-coder-1.3b-instruct'
+model_name = 'deepseek-ai/deepseek-coder-6.7b-instruct'
+# model_name = 'Qwen/Qwen2.5-Coder-3B-Instruct'
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 problem_file = os.path.join(data_root, f"humaneval-python.jsonl")
 # sequences = pd.read_pickle(continue_from)
@@ -142,6 +143,7 @@ totalnum = len(sequences)
 totalpass = 0
 currentnum = 0
 total_samples = []
+cleaned_output_results = []
 for idx in tqdm(range(0, len(sequences), batch_size)):
     log_file = os.path.join(log_dir,
                                     f'{model_name.replace("/", "_")}_{idx}_shot_log_{language}.json')
@@ -179,6 +181,7 @@ for idx in tqdm(range(0, len(sequences), batch_size)):
     
     # print("Prompt", batch_lines[0]['prompt'])
     for line in batch_lines:
+        cleaned_output_results.append(line['generation'])
         test_run_results.append(results[line['completion_id']][0][1]['passed'])
         if results[line['completion_id']][0][1]['passed']:
             totalpass += 1
@@ -190,7 +193,7 @@ for idx in tqdm(range(0, len(sequences), batch_size)):
     
 results = pd.DataFrame(sequences)
 results['label'] = test_run_results
-
+results['cleaned_code'] = cleaned_output_results
 print(totalpass)
 print(totalnum)
 results.to_parquet(continue_from.replace(".parquet", "_label.parquet"))
