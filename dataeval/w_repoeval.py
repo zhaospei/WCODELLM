@@ -37,7 +37,7 @@ def _save_dataset(tokenizer, language, max_seq_len, max_gen_len, sft=False, inst
     save_path = f"{save_path}_instruction" if instruction else save_path
     
     # if not os.path.exists(save_path):
-    data_path = os.path.join(DATASET_ROOT, "function_level_completion.test.jsonl")
+    data_path = os.path.join(DATASET_ROOT, "function_level_completion.test.clean.jsonl")
     lines = load_jsonl(data_path)
     dataset = {}
     dataset["prompt"] = []
