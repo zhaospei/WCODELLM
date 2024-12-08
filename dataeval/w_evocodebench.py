@@ -33,55 +33,55 @@ def load_jsonl(fname):
 
 def _save_dataset(tokenizer,  max_seq_len, max_gen_len , instruction=False):
     save_path = f"{DATASET_ROOT}/{tokenizer.name_or_path}_{max_seq_len}_{max_gen_len}_{instruction}"
-    if not os.path.exists(save_path):
-        data_path = os.path.join(DATASET_ROOT, "prompt_elements.jsonl")
-        lines = load_jsonl(data_path)
+    # if not os.path.exists(save_path):
+    data_path = os.path.join(DATASET_ROOT, "prompt_elements.jsonl")
+    lines = load_jsonl(data_path)
 
-        dataset = {}
-        dataset["prompt"] = []
-        dataset["task_id"] = []
-        dataset["original_prompt"] = []
-        dataset["canonical_solution"] = []
-        dataset["stopwords"] = []
-        if instruction:
-            for idx, sample in enumerate(lines):
-                input_ids = tokenizer.encode(sample['input_code'])
-                max_context_length = max_seq_len - len(input_ids) - max_gen_len
-                context_above_ids = tokenizer.encode(sample['contexts_above'])
-                context_above = ''
-                if len(context_above_ids) > max_context_length:
-                    context_above_ids = context_above_ids[-max_context_length:]
-                    context_above = tokenizer.decode(context_above_ids)
-                prompt = TEMPLATE.format(
-                    function_name=sample['function_name'],
-                    contexts_above=context_above,
-                    input_code=sample['input_code']
-                )
-                dataset["prompt"].append(prompt)
-                dataset["task_id"].append(sample["namespace"])
-                dataset["original_prompt"].append(sample["input_code"])
-                dataset["canonical_solution"].append("<NO_SOLUTION>")
-                dataset["stopwords"].append(STOP_WORDS)
-        else:
-            for idx, sample in enumerate(lines):
-                input_ids = tokenizer.encode(sample['input_code'])
-                max_context_length = max_seq_len - len(input_ids) - max_gen_len
-                context_above_ids = tokenizer.encode(sample['contexts_above'])
-                context_above = ''
-                if len(context_above_ids) > max_context_length:
-                    context_above_ids = context_above_ids[-max_context_length:]
-                    context_above = tokenizer.decode(context_above_ids)
-                prompt = context_above + "\n" + sample['input_code']
-                dataset["prompt"].append(prompt)
-                dataset["task_id"].append(sample["namespace"])
-                dataset["original_prompt"].append(sample["input_code"])
-                dataset["canonical_solution"].append("<NO_SOLUTION>")
-                dataset["stopwords"].append(STOP_WORDS)
-            
-        data_df = pd.DataFrame.from_dict(dataset)
-        dataset = Dataset.from_pandas(data_df)
+    dataset = {}
+    dataset["prompt"] = []
+    dataset["task_id"] = []
+    dataset["original_prompt"] = []
+    dataset["canonical_solution"] = []
+    dataset["stopwords"] = []
+    if instruction:
+        for idx, sample in enumerate(lines):
+            input_ids = tokenizer.encode(sample['input_code'])
+            max_context_length = max_seq_len - len(input_ids) - max_gen_len
+            context_above_ids = tokenizer.encode(sample['contexts_above'])
+            context_above = sample['contexts_above']
+            if len(context_above_ids) > max_context_length:
+                context_above_ids = context_above_ids[-max_context_length:]
+                context_above = tokenizer.decode(context_above_ids)
+            prompt = TEMPLATE.format(
+                function_name=sample['function_name'],
+                contexts_above=context_above,
+                input_code=sample['input_code']
+            )
+            dataset["prompt"].append(prompt)
+            dataset["task_id"].append(sample["namespace"])
+            dataset["original_prompt"].append(sample["input_code"])
+            dataset["canonical_solution"].append("<NO_SOLUTION>")
+            dataset["stopwords"].append(STOP_WORDS)
+    else:
+        for idx, sample in enumerate(lines):
+            input_ids = tokenizer.encode(sample['input_code'])
+            max_context_length = max_seq_len - len(input_ids) - max_gen_len
+            context_above_ids = tokenizer.encode(sample['contexts_above'])
+            context_above = ''
+            if len(context_above_ids) > max_context_length:
+                context_above_ids = context_above_ids[-max_context_length:]
+                context_above = tokenizer.decode(context_above_ids)
+            prompt = context_above + "\n" + sample['input_code']
+            dataset["prompt"].append(prompt)
+            dataset["task_id"].append(sample["namespace"])
+            dataset["original_prompt"].append(sample["input_code"])
+            dataset["canonical_solution"].append("<NO_SOLUTION>")
+            dataset["stopwords"].append(STOP_WORDS)
         
-        dataset.save_to_disk(save_path)
+    data_df = pd.DataFrame.from_dict(dataset)
+    dataset = Dataset.from_pandas(data_df)
+    
+    dataset.save_to_disk(save_path)
     return save_path
 
 # _save_dataset(sft=False)

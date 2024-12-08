@@ -71,60 +71,60 @@ Here is my problem:
 def _save_dataset(tokenizer, max_seq_len, max_gen_len, instruction=False):
     save_path = f"{DATASET_ROOT}/{tokenizer.name_or_path}_{max_seq_len}_{max_gen_len}_{instruction}"
     
-    if not os.path.exists(save_path):
-        mpbb_data = MBPPDataset(root=DATASET_ROOT)
-        dataset = {}
-        dataset["prompt"] = []
-        dataset["task_id"] = []
-        dataset["canonical_solution"] = []
-        dataset["prompt_length"] = []
-        dataset["original_prompt"] = []
-        
-        if instruction:
-            problem_file = os.path.join(DATASET_ROOT, f"mbpp.jsonl")
-            examples = list(read_test_examples(problem_file))
-            for ex in examples:
-                dataset["prompt"].append(ex["prompt"])
-                dataset["task_id"].append(ex["task_id"])
-                dataset["canonical_solution"].append(ex["canonical_solution"])
-                dataset["prompt_length"].append(len(ex["prompt"]))
-                dataset["original_prompt"].append(ex["original_prompt"])
-        else:
-            for j in range(len(mpbb_data)):
-                data = mpbb_data[j]
-                prompt = mpbb_data.prompt
-                prompt1 = data["prompt"]
-                tests = "\n".join(data["test"])
-                # test_list.append(data["test"])
-                prompt_curr = f"You are an expert Python programmer, and here is your task: {prompt1} Your code should pass these tests:\n\n{tests}\n[BEGIN]"
-                fprompt = ""
-                for i in range(len(prompt) - 1, -1, -1):
-                    finalprompt = prompt[i] + prompt_curr
-                    curr_seq_len = len(tokenizer.encode(finalprompt))
-                    if curr_seq_len >= max_seq_len - max_gen_len:
-                        continue
-                    else:
-                        fprompt = finalprompt
+    # if not os.path.exists(save_path):
+    mpbb_data = MBPPDataset(root=DATASET_ROOT)
+    dataset = {}
+    dataset["prompt"] = []
+    dataset["task_id"] = []
+    dataset["canonical_solution"] = []
+    dataset["prompt_length"] = []
+    dataset["original_prompt"] = []
+    
+    if instruction:
+        problem_file = os.path.join(DATASET_ROOT, f"mbpp.jsonl")
+        examples = list(read_test_examples(problem_file))
+        for ex in examples:
+            dataset["prompt"].append(ex["prompt"])
+            dataset["task_id"].append(ex["task_id"])
+            dataset["canonical_solution"].append(ex["canonical_solution"])
+            dataset["prompt_length"].append(len(ex["prompt"]))
+            dataset["original_prompt"].append(ex["original_prompt"])
+    else:
+        for j in range(len(mpbb_data)):
+            data = mpbb_data[j]
+            prompt = mpbb_data.prompt
+            prompt1 = data["prompt"]
+            tests = "\n".join(data["test"])
+            # test_list.append(data["test"])
+            prompt_curr = f"You are an expert Python programmer, and here is your task: {prompt1} Your code should pass these tests:\n\n{tests}\n[BEGIN]"
+            fprompt = ""
+            for i in range(len(prompt) - 1, -1, -1):
+                finalprompt = prompt[i] + prompt_curr
+                curr_seq_len = len(tokenizer.encode(finalprompt))
+                if curr_seq_len >= max_seq_len - max_gen_len:
+                    continue
+                else:
+                    fprompt = finalprompt
+                    break
+            if fprompt == "":
+                fprompt = prompt_curr
+                encodelist = tokenizer.encode(fprompt)
+                while True:
+                    try:
+                        fprompt = tokenizer.decode(encodelist[:max_seq_len - max_gen_len])
                         break
-                if fprompt == "":
-                    fprompt = prompt_curr
-                    encodelist = tokenizer.encode(fprompt)
-                    while True:
-                        try:
-                            fprompt = tokenizer.decode(encodelist[:max_seq_len - max_gen_len])
-                            break
-                        except:
-                            encodelist.pop(-1)
-                dataset["prompt"].append(fprompt)
-                dataset["canonical_solution"].append(data['code'])
-                dataset["prompt_length"].append(len(fprompt))
-                dataset["task_id"].append(data["task_id"])
-                dataset["original_prompt"].append(data["prompt"])
-            
-        data_df = pd.DataFrame.from_dict(dataset)
-        dataset = Dataset.from_pandas(data_df)
+                    except:
+                        encodelist.pop(-1)
+            dataset["prompt"].append(fprompt)
+            dataset["canonical_solution"].append(data['code'])
+            dataset["prompt_length"].append(len(fprompt))
+            dataset["task_id"].append(data["task_id"])
+            dataset["original_prompt"].append(data["prompt"])
         
-        dataset.save_to_disk(save_path)
+    data_df = pd.DataFrame.from_dict(dataset)
+    dataset = Dataset.from_pandas(data_df)
+    
+    dataset.save_to_disk(save_path)
     return save_path
 
 # _save_dataset(sft=False)
