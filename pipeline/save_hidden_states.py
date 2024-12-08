@@ -19,6 +19,7 @@ import dataeval.w_humaneval as human_eval
 import dataeval.w_mbpp as mbpp
 import dataeval.w_ds1000 as ds1000
 import dataeval.w_repoeval as repo_eval
+import dataeval.w_evocodebench as evocodebench
 from dataeval.w_humaneval import cleanup_code as human_eval_cleanup_code
 import models
 import utils
@@ -77,6 +78,9 @@ def get_dataset_fn(data_name):
         return ds1000.get_dataset
     if data_name == 'repo_eval':
         return repo_eval.get_dataset
+    if data_name == 'evocodebench':
+        return evocodebench.get_dataset
+    raise ValueError(f"Unknown dataset {data_name}")
 
 
 @torch.no_grad()
