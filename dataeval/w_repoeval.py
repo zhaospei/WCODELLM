@@ -8,13 +8,21 @@ import json
 DATASET_ROOT= os.path.join(_settings.DATA_FOLDER, "RepoEval", "datasets")
 STOP_WORDS = ["\nclass", "\ndef", "\n#", "\n@", "\nprint", "\nif", "\n```", "<file_sep>"]
 
-def build_deepseekcoder_instruction(languge: str, question: str):
-    return '''
-Please continue to complete the function. You are not allowed to modify the given code and do the completion only. Please return all completed function in a codeblock. Place the executable code without any other non-executable things. Here is the given code to do completion:
-```{}
-{}
+TEMPLATE = """\
+Please complete the {function_name} function based on the contexts above the function.
+
+The contexts above the function are:
+```Python
+{contexts_above}
 ```
-'''.strip().format(languge.lower(), question.strip())
+
+The code to be completed is:
+```Python
+{input_code}
+```
+
+Completed code:
+"""
 
 def load_jsonl(fname):
     with open(fname, 'r', encoding='utf8') as f:
@@ -24,12 +32,12 @@ def load_jsonl(fname):
         return lines
 
 
-def _save_dataset(language, sft=False, instruction=False):
+def _save_dataset(tokenizer, language, max_seq_len, max_gen_len, sft=False, instruction=False):
     save_path = f"{DATASET_ROOT}/{language}" if not sft else f"{DATASET_ROOT}/{language}_sft"
     save_path = f"{save_path}_instruction" if instruction else save_path
     
     if not os.path.exists(save_path):
-        data_path = os.path.join(DATASET_ROOT, "function_level_completion_2k_context_codex.test.jsonl")
+        data_path = os.path.join(DATASET_ROOT, "function_level_completion_2k_context.test.jsonl")
         lines = load_jsonl(data_path)
         dataset = {}
         dataset["prompt"] = []
@@ -37,25 +45,39 @@ def _save_dataset(language, sft=False, instruction=False):
         dataset["original_prompt"] = []
         dataset["canonical_solution"] = []
         dataset["stopwords"] = []
-        if instruction:
-            for idx, sample in enumerate(lines):
-                # dataset["prompt"].append(sample["prompt"] + '\n# Complete the body of the unfinished function:\n')
-                # dataset["prompt"].append(sample["prompt"])
-                prompt = build_deepseekcoder_instruction('python', sample['prompt'])
+        for idx, sample in enumerate(lines):
+                input_ids = tokenizer.encode(sample['input_code'])
+                max_context_length = max_seq_len - len(input_ids) - max_gen_len
+                context_above_ids = tokenizer.encode(sample['contexts_above'])
+                context_above = ''
+                if len(context_above_ids) > max_context_length:
+                    context_above_ids = context_above_ids[-max_context_length:]
+                    context_above = tokenizer.decode(context_above_ids)
+                prompt = TEMPLATE.format(
+                    function_name=sample['function_name'],
+                    contexts_above=context_above,
+                    input_code=sample['input_code']
+                )
                 dataset["prompt"].append(prompt)
-                # dataset["stopwords"].append(sample["stopwords"])
                 dataset["task_id"].append(sample["metadata"]["task_id"] + f"_{idx}")
                 dataset["original_prompt"].append(sample["prompt"])
                 dataset["canonical_solution"].append(sample["metadata"]["ground_truth"])
                 dataset["stopwords"].append(STOP_WORDS)
-        else:
-            for idx, sample in enumerate(lines):
-                # dataset["prompt"].append(sample["prompt"] + '\n# Complete the body of the unfinished function:\n')
-                dataset["prompt"].append(sample["prompt"])
-                dataset["task_id"].append(sample["metadata"]["task_id"] + f"_{idx}")
-                dataset["original_prompt"].append(sample["prompt"])
-                dataset["canonical_solution"].append(sample["metadata"]["ground_truth"])
-                dataset["stopwords"].append(STOP_WORDS)
+    else:
+        for idx, sample in enumerate(lines):
+            input_ids = tokenizer.encode(sample['input_code'])
+            max_context_length = max_seq_len - len(input_ids) - max_gen_len
+            context_above_ids = tokenizer.encode(sample['contexts_above'])
+            context_above = ''
+            if len(context_above_ids) > max_context_length:
+                context_above_ids = context_above_ids[-max_context_length:]
+                context_above = tokenizer.decode(context_above_ids)
+            prompt = context_above + "\n" + sample['input_code']
+            dataset["prompt"].append(prompt)
+            dataset["task_id"].append(sample["metadata"]["task_id"] + f"_{idx}")
+            dataset["original_prompt"].append(sample["prompt"])
+            dataset["canonical_solution"].append(sample["metadata"]["ground_truth"])
+            dataset["stopwords"].append(STOP_WORDS)
             
         data_df = pd.DataFrame.from_dict(dataset)
         dataset = Dataset.from_pandas(data_df)
@@ -65,7 +87,7 @@ def _save_dataset(language, sft=False, instruction=False):
 
 # _save_dataset(sft=False)
 def get_dataset(tokenizer, language, sft=False, instruction=False):
-    dataset = datasets.load_from_disk(_save_dataset(language, sft, instruction))
+    dataset = datasets.load_from_disk(_save_dataset(tokenizer, language, max_seq_len=4096, max_gen_len=512, sft=sft, instruction=instruction))
 
     def encode_humaneval(example):
         prompt = example['prompt']
