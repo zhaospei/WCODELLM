@@ -64,4 +64,4 @@ output
 *.txt\
 vastai/
 vastai/*.zip
-!benchmark/**
+!benchmark/*/*.parquet

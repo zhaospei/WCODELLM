@@ -20,10 +20,13 @@ import dataeval.w_mbpp as mbpp
 import dataeval.w_ds1000 as ds1000
 import dataeval.w_repoeval as repo_eval
 import dataeval.w_evocodebench as evocodebench
+import dataeval.w_repoexec as repo_exec
 from dataeval.w_humaneval import cleanup_code as human_eval_cleanup_code
 import models
 import utils
 from func.metric import *
+
+passed_input_len_task = ['repo_eval', 'evocodebench', 'repoexec']
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='llama-13b-hf')
@@ -80,6 +83,8 @@ def get_dataset_fn(data_name):
         return repo_eval.get_dataset
     if data_name == 'evocodebench':
         return evocodebench.get_dataset
+    if data_name == 'repoexec':
+        return repo_exec.get_dataset
     raise ValueError(f"Unknown dataset {data_name}")
 
 
@@ -123,7 +128,7 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
 
         input_ids = batch['input_ids'].to(device)
         print(f"input_ids shape: {input_ids.shape}")
-        if args.dataset != 'repo_eval' and (input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9):
+        if args.dataset not in passed_input_len_task  and (input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9):
             continue
         input_length = input_ids.shape[1]
         torch.cuda.empty_cache()
