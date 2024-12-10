@@ -172,9 +172,6 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                     all_token_hidden_states_layer_list[layer] = {}
                 all_token_hidden_states_layer_list[layer].update(all_token_hidden_states_layer)
             # return hidden_state
-            
-            for gen_ids in generations:
-                generations_decoded.append(tokenizer.decode(gen_ids, skip_special_tokens=True))
                 
             del dict_outputs
             gc.collect()
@@ -185,7 +182,9 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             torch.cuda.empty_cache()
             num_gens -= len(generation)
             off_set += len(generation)
-            
+        
+        for gen_ids in generations:
+                generations_decoded.append(tokenizer.decode(gen_ids, skip_special_tokens=True))
         for layer in layers_to_process:
             layer_embeddings = all_token_hidden_states_layer_list[layer]
             layer_embeddings_dict = dict(
