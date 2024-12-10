@@ -57,11 +57,11 @@ tmp/*
 *.parquet
 
 *.ipynb
-output/
+output/**
 PBS_run.sh.*
 benchmark/HumanEval/human_eval/rust/*
-output
 *.txt\
 vastai/
 vastai/*.zip
 !benchmark/*/*.parquet
+jaist
