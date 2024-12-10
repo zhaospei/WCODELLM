@@ -200,7 +200,8 @@ def extract_generation_code(example, output, lang_code: str, verbose: bool=False
     
     try:
         # print(output)
-        code_block: str = re.findall(f'```python\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+        # code_block: str = re.findall(f'```python\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+        code_block: str = re.findall(r'```(?:python)?\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
         # print(code_block)
         generation = code_block
         # print(f"Function Prefix: {func_prefix}")

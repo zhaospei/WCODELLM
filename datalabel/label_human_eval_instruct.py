@@ -60,7 +60,9 @@ def extract_generation_code(example: str, output, lang_code: str, verbose: bool=
     indent = setting['indent']
 
     try:
-        code_block: str = re.findall(f'```{lang.lower()}\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+        # code_block: str = re.findall(f'```{lang.lower()}\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+        code_block: str = re.findall(r'```(?:python)?\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+
         if verbose:
             print(">>> Task: {}\n{}".format(task_id, code_block))
         
@@ -120,11 +122,13 @@ from benchmark.HumanEval.human_eval.evaluation import evaluate_functional_correc
 
 
 data_root = "/drive2/tuandung/WCODELLM/benchmark/HumanEval/data"
-continue_from = '/drive2/tuandung/WCODELLM/vastai/deepseekcoder-6.7b-instruct/human_eval_layers_more/output2/LFCLF_embedding_human_eval_deepseek-ai_deepseek-coder-6.7b-instruct_32.parquet'
+continue_from = '/drive2/tuandung/WCODELLM/jaist/magic_coder/LFCLF_embedding_human_eval_ise-uiuc_Magicoder-S-DS-6.7B_1.parquet'
 kwargs_handlers = [DistributedDataParallelKwargs(find_unused_parameters=True)]
 accelerator = Accelerator(mixed_precision="bf16", kwargs_handlers=kwargs_handlers)
-model_name = 'deepseek-ai/deepseek-coder-6.7b-instruct'
+# model_name = 'deepseek-ai/deepseek-coder-6.7b-instruct'
 # model_name = 'Qwen/Qwen2.5-Coder-3B-Instruct'
+# model_name = 'codellama/CodeLlama-7b-Instruct-hf'
+model_name = 'ise-uiuc/Magicoder-S-DS-6.7B'
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 problem_file = os.path.join(data_root, f"humaneval-python.jsonl")
 # sequences = pd.read_pickle(continue_from)

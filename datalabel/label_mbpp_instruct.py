@@ -55,7 +55,8 @@ def extract_generation_code(gpt_completion):
     # gpt_completion = example['gpt_completion']
     generation = gpt_completion
     try:
-        code_block: str = re.findall(f'```python\n(.*?)```', gpt_completion, re.DOTALL | re.IGNORECASE)[0]
+        # code_block: str = re.findall(f'```python\n(.*?)```', gpt_completion, re.DOTALL | re.IGNORECASE)[0]
+        code_block: str = re.findall(r'```(?:python)?\n(.*?)```', gpt_completion, re.DOTALL | re.IGNORECASE)[0]
         generation = code_block
     except Exception as ex:
         print("Failed to extract codeblock:\n{}".format(gpt_completion))
@@ -75,10 +76,10 @@ import os
 from benchmark.MBPP.human_eval.evaluation import evaluate_functional_correctness_each_sample
 
 data_root = "/drive2/tuandung/WCODELLM/benchmark/MBPP/data"
-continue_from = '/drive2/tuandung/WCODELLM/vastai/deepseekcoder-6.7b-instruct/mbpp/LFCLF_embedding_mbpp_deepseek-ai_deepseek-coder-6.7b-instruct_24.parquet'
+continue_from = '/drive2/tuandung/WCODELLM/jaist/codellama/LFCLF_embedding_mbpp_codellama_CodeLlama-7b-Instruct-hf_1.parquet'
 kwargs_handlers = [DistributedDataParallelKwargs(find_unused_parameters=True)]
 accelerator = Accelerator(mixed_precision="bf16", kwargs_handlers=kwargs_handlers)
-model_name = 'deepseek-ai/deepseek-coder-6.7b-instruct'
+model_name = 'codellama/CodeLlama-7b-Instruct-hf'
 # model_name = 'Qwen/Qwen2.5-Coder-3B-Instruct'
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 # sequences = pd.read_pickle(continue_from)
