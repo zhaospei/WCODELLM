@@ -10,9 +10,14 @@ import dataeval.w_humaneval as human_eval
 import dataeval.w_mbpp as mbpp
 import dataeval.w_ds1000 as ds1000
 import dataeval.w_repoeval as repo_eval
+import dataeval.w_evocodebench as evocodebench
+import dataeval.w_repoexec as repo_exec
 from dataeval.w_humaneval import extract_generation_code as human_eval_egc
 from dataeval.w_mbpp import extract_generation_code as mbpp_eval_egc
 from dataeval.w_ds1000 import extract_generation_code as ds1000_eval_egc
+from dataeval.w_evocodebench import extract_generation_code as evocodebench_eval_egc
+from dataeval.w_repoeval import extract_generation_code as repoeval_eval_egc
+
 from func.metric import *
 
 
@@ -34,6 +39,11 @@ def get_dataset_fn(data_name):
         return ds1000.get_dataset
     if data_name == 'repo_eval':
         return repo_eval.get_dataset
+    if data_name == 'evocodebench':
+        return evocodebench.get_dataset
+    if data_name == 'repoexec':
+        return repo_exec.get_dataset
+    raise ValueError(f"Unknown dataset {data_name}")
 
 def extract_generation_code_fun(data_name):
     if data_name == 'human_eval':
@@ -42,8 +52,7 @@ def extract_generation_code_fun(data_name):
         return mbpp_eval_egc
     if data_name == 'ds1000':
         return ds1000_eval_egc
-    if data_name == 'repo_eval':
-        return None
+    if data_name == '
 
 def main():
     tokenizer = models.load_tokenizer(args.model_name)
