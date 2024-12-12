@@ -52,7 +52,10 @@ def extract_generation_code_fun(data_name):
         return mbpp_eval_egc
     if data_name == 'ds1000':
         return ds1000_eval_egc
-    if data_name == '
+    if data_name == 'repo_eval':
+        return repoeval_eval_egc
+    if data_name == 'evocodebench':
+        return evocodebench_eval_egc
 
 def main():
     tokenizer = models.load_tokenizer(args.model_name)
