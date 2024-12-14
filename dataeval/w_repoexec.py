@@ -77,7 +77,7 @@ def _save_dataset(tokenizer, language, max_seq_len, max_gen_len, sft=False, inst
             if len(context_above_ids) > max_context_length:
                 context_above_ids = context_above_ids[-max_context_length:]
                 contexts_above = tokenizer.decode(context_above_ids)
-            prompt = context_above + "\n" + input_code
+            prompt = contexts_above + "\n" + input_code
             dataset["prompt"].append(prompt)
             dataset["task_id"].append(sample["id"])
             dataset["original_prompt"].append(sample["prompt"])

@@ -8,11 +8,6 @@ import textwrap
 import _settings
 import json
 
-parser = Parser()
-PY_LANGUAGE = Language('../build/my-languages.so', 'python')
-parser = Parser()
-parser.set_language(PY_LANGUAGE)
-
 DATASET_ROOT= os.path.join(_settings.DATA_FOLDER, "EvoCodeBench", "prompt")
 STOP_WORDS = []
 wrong_code = "    pass\n"
@@ -93,7 +88,7 @@ def _save_dataset(tokenizer,  max_seq_len, max_gen_len , instruction=False):
     return save_path
 
 # _save_dataset(sft=False)
-def get_dataset(tokenizer, language='python', sft=False, instruction=False, max_seq_len=4096, max_gen_len=500):
+def get_dataset(tokenizer, language='python', sft=False, instruction=False, max_seq_len=2048, max_gen_len=500):
     dataset = datasets.load_from_disk(_save_dataset(tokenizer, max_seq_len, max_gen_len, instruction))
 
     def encode_humaneval(example):
