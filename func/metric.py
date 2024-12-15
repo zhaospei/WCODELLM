@@ -43,7 +43,7 @@ def getCleanGenerationRange(tokenized_generated_text, clean_text, tokenizer):
         while lo <= hi:
             mid = (lo + hi) // 2
             sub_generated_text = tokenizer.decode(tokenized_generated_text[i:mid], skip_special_tokens=True)
-            sub_generated_text = sub_generated_text.strip()
+            # sub_generated_text = sub_generated_text.strip()
             if sub_generated_text == clean_text:
                 start_ind = i
                 end_ind = mid

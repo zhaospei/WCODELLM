@@ -1,13 +1,16 @@
 from datasets import load_dataset
 import pandas as pd
 import datasets
+from tree_sitter import Language, Parser
 from datasets import Dataset
 import os
+import textwrap
 import _settings
 import json
 
 DATASET_ROOT= os.path.join(_settings.DATA_FOLDER, "EvoCodeBench", "prompt")
 STOP_WORDS = []
+wrong_code = "    pass\n"
 TEMPLATE = """\
 Please complete the {function_name} function based on the contexts above the function.
 
@@ -85,7 +88,7 @@ def _save_dataset(tokenizer,  max_seq_len, max_gen_len , instruction=False):
     return save_path
 
 # _save_dataset(sft=False)
-def get_dataset(tokenizer, language='python', sft=False, instruction=False, max_seq_len=4096, max_gen_len=500):
+def get_dataset(tokenizer, language='python', sft=False, instruction=False, max_seq_len=2048, max_gen_len=500):
     dataset = datasets.load_from_disk(_save_dataset(tokenizer, max_seq_len, max_gen_len, instruction))
 
     def encode_humaneval(example):
@@ -99,3 +102,91 @@ def get_dataset(tokenizer, language='python', sft=False, instruction=False, max_
     dataset.set_format(type='torch', columns=['input_ids', 'attention_mask'], output_all_columns=True)
 
     return dataset
+
+def extract_code_from_response(completion: str):
+    """
+    Extract code from a completion. The code is in markdown format.
+    :param completion: String.
+    :return: Code in the completion.
+    """
+    # if args.model_type == 'glm':
+    #     completion_lines = completion.split("\\n")
+    #     code_lines = completion.split("\\n")
+    # else:
+    completion_lines = completion.split("\n")
+    code_lines = completion.split("\n")
+    code_sol, code_eol = None, None
+    for i, line in enumerate(completion_lines):
+        if line.startswith("```"):
+            if code_sol is None:
+                code_sol = i+1
+            else:
+                code_eol = i
+                break
+    if code_sol is None: # No markdown code block
+        if code_eol is None:
+            code_sol = 0
+            code_eol = len(completion_lines)
+        else:
+            code_sol = 0
+    elif code_eol is None: # No end of markdown block
+        code_eol = len(completion_lines)
+    code_lines = completion_lines[code_sol:code_eol]
+    code = "\n".join(code_lines)
+    # if args.model_type == 'glm':
+    #     code = code.replace('\\\"', '"')
+    return code
+
+def count_indent(code):
+    if type(code) == str: # a single statement
+        return len(code) - len(textwrap.dedent(code))
+    elif type(code) == list: # a list of statements, i.e., a function body
+        for line in code:
+            if line.strip() != '':
+                return len(line) - len(textwrap.dedent(line))
+
+def extract_generation_code(example, output, lang_code: str, verbose: bool=False):
+    task_id = example['task_id']
+    # output = example.get('output', example.get("gpt_completion"))
+    function_name = task_id.split('.')[-1]
+    
+    try:
+        # print(output)
+        # code_block: str = re.findall(f'```python\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+        # code_block: str = re.findall(r'```(?:Python)?\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+        # print(code_block)
+        code = extract_code_from_response(output)
+        # if not f'def {function_name}(' in code:
+        #     completion_lines = code.strip('\n').split("\n")
+        #     body_indent = count_indent(completion_lines[0])
+        #     new_complation = []
+        #     for line in completion_lines:
+        #         if count_indent(line) >= body_indent or line.strip() == "":
+        #             new_complation.append(line)
+        #         else:
+        #             break
+        #     new_complation = "\n".join(new_complation)
+        #     # results.append(new_complation)
+        # else:
+        #     function_body = find_function_body(code, function_name)
+        #     if function_body is None:
+        #         results.append(wrong_code)
+        #     else:
+        #         results.append(function_body)
+        # generation = code_block
+        generation = code
+        # print(f"Function Prefix: {func_prefix}")
+        # example['generation'] = generation
+
+    except Exception as ex:
+        print("Failed to extract code block with error `{}`:\n>>> Task: {}\n>>> Output:\n{}".format(
+            ex, task_id, output
+        ))
+        generation = output
+    # generation = generation.split('</code>')[0]
+    # generation = generation.split('\nEND SOLUTION')[0]
+    # generation = generation.replace('<code>', '')
+    # print(f'Output: {output}')
+    # print(f'Generation: {generation}')
+    # print(generation)
+    return generation
