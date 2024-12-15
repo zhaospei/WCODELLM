@@ -192,16 +192,16 @@ def extract_generation_code(example, output, lang_code: str, verbose: bool=False
             while start - indent >= 0 and code_block[start - indent-1] == ' ':
                 indent += 1
             
-            try:
-                end = code_block.rindex('\n' + ' '*indent + '}')
-            except:
-                end = len(code_block)
+            # try:
+            #     end = code_block.rindex('\n' + ' '*indent + '}')
+            # except:
+            end = len(code_block)
         except:
             start = 0
-            try:
-                end = code_block.rindex('\n' + ' '*indent + '}')
-            except:
-                end = len(code_block)
+            # try:
+            #     end = code_block.rindex('\n' + ' '*indent + '}')
+            # except:
+            end = len(code_block)
 
         # print(len(code_block), start, end)
         body = code_block[start:end]
