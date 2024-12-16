@@ -133,30 +133,28 @@ def eval_prompt(args):
     batch_size = 4
 
     # Convert prompts into a DataLoader for batching
-    prompts = [item["prompt"] for item in baseline_prompts]
+    prompts = [tokenizer.apply_chat_template(
+            [{"role": "user", "content": item["prompt"]}],
+             tokenize=False,
+            add_generation_prompt=True,
+        ) for item in baseline_prompts]
+    # print(prompts[0])
     data_loader = DataLoader(prompts, batch_size=batch_size, shuffle=False)
 
     for batch in tqdm(data_loader, desc="Generating in batches"):
-        # Tokenize the batch of prompts
-        #print(len(batch),batch)
-        inputs = tokenizer.apply_chat_template(
-            [{"role": "user", "content": prompt} for prompt in batch],
-            return_tensors="pt",
-            add_generation_prompt=True,
-        ).to(model.device)
-        #print(inputs.shape)
+        inputs = tokenizer(
+                        batch, return_tensors="pt", padding="longest"
+                    ).to("cuda")
+        # print(inputs)
         generation_config["pad_token_id"] = tokenizer.eos_token_id
+        generated_ids = model.generate(**inputs, **generation_config)
 
-        # Generate outputs for the batch
-        with torch.no_grad():
-            outputs = model.generate(inputs, **generation_config)
-    
-        # Decode outputs for the batch
-        for i, output in enumerate(outputs):
-            generated_text = tokenizer.decode(
-                output[len(inputs[i]):], skip_special_tokens=True
-            )
-            generated_texts.append(generated_text)
+        output = tokenizer.batch_decode(
+                        generated_ids, skip_special_tokens=True
+                    )
+        for i_, source in enumerate(batch):
+            res = output[i_]
+            generated_texts.append(res)
 
     # for prompt in tqdm(baseline_prompts):
     #     #print(prompt)
