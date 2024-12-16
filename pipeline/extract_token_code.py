@@ -12,11 +12,13 @@ import dataeval.w_ds1000 as ds1000
 import dataeval.w_repoeval as repo_eval
 import dataeval.w_evocodebench as evocodebench
 import dataeval.w_repoexec as repo_exec
+import dataeval.w_deveval as dev_eval
 from dataeval.w_humaneval import extract_generation_code as human_eval_egc
 from dataeval.w_mbpp import extract_generation_code as mbpp_eval_egc
 from dataeval.w_ds1000 import extract_generation_code as ds1000_eval_egc
 from dataeval.w_evocodebench import extract_generation_code as evocodebench_eval_egc
 from dataeval.w_repoeval import extract_generation_code as repoeval_eval_egc
+from dataeval.w_deveval import extract_generation_code as deveval_eval_egc
 
 from func.metric import *
 
@@ -43,6 +45,8 @@ def get_dataset_fn(data_name):
         return evocodebench.get_dataset
     if data_name == 'repoexec':
         return repo_exec.get_dataset
+    if data_name == 'dev_eval':
+        return dev_eval.get_dataset
     raise ValueError(f"Unknown dataset {data_name}")
 
 def extract_generation_code_fun(data_name):
@@ -56,6 +60,10 @@ def extract_generation_code_fun(data_name):
         return repoeval_eval_egc
     if data_name == 'evocodebench':
         return evocodebench_eval_egc
+    if data_name == 'repoexec':
+        return repoeval_eval_egc
+    if data_name == 'dev_eval':
+        return deveval_eval_egc
 
 def main():
     tokenizer = models.load_tokenizer(args.model_name)
@@ -107,8 +115,8 @@ def main():
                 start_ind, end_ind = getCleanGenerationRange(generated_ids.tolist(), clean_generation_decoded, tokenizer)
                 if start_ind is None or end_ind is None:
                     has_error = True
-                    print("gen:", gen)
-                    print("clean_generation_decoded:", clean_generation_decoded)
+                    # print("gen:", gen)
+                    # print("clean_generation_decoded:", clean_generation_decoded)
                     print(f'Cannot find clean generation range for {task_id_path}')
                     clean_generations_range.append(getGenerationRange(generated_ids.tolist(), tokenizer))
                 else:
