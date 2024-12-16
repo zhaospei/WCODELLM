@@ -132,13 +132,15 @@ def main(args):
     examples = [json.loads(x) for x in open(problem_file) if x.strip()]
     print(f'Loaded {len(sequences)} indices')
     batch_size = 8
-    language = languge_settings[args.lang]
+    language = args.lang
     log_dir = 'tmp/humaneval'
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
     test_run_results = []
     totalnum = len(sequences)
+    print(totalnum)
+    print(sequences[0])
     # totalnum = 164 * 10
     totalpass = 0
     currentnum = 0
@@ -153,6 +155,7 @@ def main(args):
         runlang = language
         for sequence in sequences[idx:idx + batch_size]:
             for ex in examples:
+                print(ex["task_id"], sequence["task_id"])
                 if ex['task_id'] == sequence['task_id']:
                     example = ex
                     break
@@ -183,7 +186,7 @@ def main(args):
         tmpfile.close()
         for line in batch_lines:
             total_samples.append(line)
-        
+
     results = pd.DataFrame(sequences)
     results['label'] = test_run_results
     results['cleaned_code'] = cleaned_output_results
@@ -195,10 +198,10 @@ import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_root", default=4, type=int,
+    parser.add_argument("--data_root", type=str,
                         help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--file", type=str, default="codellama")
-    parser.add_argument("--model_name", type=str, default="codellama")
-    parser.add_argument("--lang", type=int, default="512")
+    parser.add_argument("--file", type=str)
+    parser.add_argument("--model_name", type=str, )
+    parser.add_argument("--lang", type=str)
     args = parser.parse_args()
     main(args)
