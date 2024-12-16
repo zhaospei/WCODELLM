@@ -128,7 +128,7 @@ def eval_prompt(args):
     generated_texts = []
 
     for prompt in tqdm(baseline_prompts):
-        print(prompt)
+        #print(prompt)
         prompt = prompt["prompt"]
         inputs = tokenizer.apply_chat_template(
             [{"role": "user", "content": prompt}],
@@ -143,7 +143,7 @@ def eval_prompt(args):
         generated_text = tokenizer.decode(
             outputs[0][len(inputs[0]) :], skip_special_tokens=True
         )
-        print(generated_text)
+        #print(generated_text)
         generated_texts.append(generated_text)
 
     true_labels = [test_dict["label"] for test_dict in baseline_prompts]
