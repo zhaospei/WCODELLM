@@ -43,10 +43,11 @@ def build_prompt_with_output(Query, Respone):
 
 
 def get_model_tokenize(model_name):
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name, resume_download=True, trust_remote_code=True
-    )
-    model.to("cuda")
+    # model = AutoModelForCausalLM.from_pretrained(
+    #     model_name, resume_download=True, trust_remote_code=True
+    # )
+    model = AutoModelForCausalLM.from_pretrained(model_name, device_map='auto', torch_dtype=torch.bfloat16)
+    # model.to("cuda")
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     # Need to set the padding token to the eos token for generation
@@ -121,8 +122,8 @@ def eval_prompt(args):
     baseline_prompts = []
     with open(args.prompt_file) as f:
         baseline_prompts = json.load(f)
-
-    model_name = model_name.replace("/", "-")
+    
+    model_name = args.model.replace("/", "-")
     generation_config = {"do_sample": False, "max_new_tokens": 32, "num_beams": 1}
 
     generated_texts = []
