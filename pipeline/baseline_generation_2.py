@@ -19,6 +19,8 @@ import dataeval.w_mbpp as mbpp
 import dataeval.w_ds1000 as ds1000
 import dataeval.w_repoeval as repo_eval
 import random
+from torch.utils.data import DataLoader
+
 
 random.seed(42)
 
@@ -128,25 +130,53 @@ def eval_prompt(args):
 
     generated_texts = []
 
-    for prompt in tqdm(baseline_prompts):
-        #print(prompt)
-        prompt = prompt["prompt"]
+    batch_size = 4
+
+    # Convert prompts into a DataLoader for batching
+    prompts = [item["prompt"] for item in baseline_prompts]
+    data_loader = DataLoader(prompts, batch_size=batch_size, shuffle=False)
+
+    for batch in tqdm(data_loader, desc="Generating in batches"):
+        # Tokenize the batch of prompts
+        #print(len(batch),batch)
         inputs = tokenizer.apply_chat_template(
-            [{"role": "user", "content": prompt}],
+            [{"role": "user", "content": prompt} for prompt in batch],
             return_tensors="pt",
             add_generation_prompt=True,
         ).to(model.device)
-        with torch.no_grad():
-            outputs = model.generate(
-                inputs,
-                **generation_config,
-            )
-        generated_text = tokenizer.decode(
-            outputs[0][len(inputs[0]) :], skip_special_tokens=True
-        )
-        #print(generated_text)
-        generated_texts.append(generated_text)
+        #print(inputs.shape)
+        generation_config["pad_token_id"] = tokenizer.eos_token_id
 
+        # Generate outputs for the batch
+        with torch.no_grad():
+            outputs = model.generate(inputs, **generation_config)
+    
+        # Decode outputs for the batch
+        for i, output in enumerate(outputs):
+            generated_text = tokenizer.decode(
+                output[len(inputs[i]):], skip_special_tokens=True
+            )
+            generated_texts.append(generated_text)
+
+    # for prompt in tqdm(baseline_prompts):
+    #     #print(prompt)
+    #     prompt = prompt["prompt"]
+    #     inputs = tokenizer.apply_chat_template(
+    #         [{"role": "user", "content": prompt}],
+    #         return_tensors="pt",
+    #         add_generation_prompt=True,
+    #     ).to(model.device)
+    #     with torch.no_grad():
+    #         outputs = model.generate(
+    #             inputs,
+    #             **generation_config,
+    #         )
+    #     generated_text = tokenizer.decode(
+    #         outputs[0][len(inputs[0]) :], skip_special_tokens=True
+    #     )
+    #     #print(generated_text)
+    #     generated_texts.append(generated_text)
+    
     true_labels = [test_dict["label"] for test_dict in baseline_prompts]
 
     predictions = []
