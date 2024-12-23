@@ -30,13 +30,17 @@ def getCleanGenerationRange(tokenized_generated_text, clean_text, tokenizer):
         pass
     tokenized_clean_text = tokenizer(clean_text, add_special_tokens=False)['input_ids']
     # print(tokenized_generated_text)
-    # print(tokenized_clean_text)
+    # print(len(tokenized_clean_text))
     # print(clean_text)
     clean_text = clean_text.strip()
+    # print(repr(clean_text))
     start_ind, end_ind = None, None
     # print(len(tokenized_generated_text))
     for i in range(len(tokenized_generated_text) - len(tokenized_clean_text) + min(len(tokenized_clean_text) // 2, 50)):
         lo = i + 1
+        start_token = tokenizer.decode(tokenized_generated_text[i:i+1])
+        if start_token.strip() == '':
+            continue
         hi = len(tokenized_generated_text)
         if start_ind is not None:
             break
@@ -44,14 +48,22 @@ def getCleanGenerationRange(tokenized_generated_text, clean_text, tokenizer):
             mid = (lo + hi) // 2
             sub_generated_text = tokenizer.decode(tokenized_generated_text[i:mid], skip_special_tokens=True)
             sub_generated_text = sub_generated_text.strip()
+            # print(i, lo, hi)
+            # if i < 10:
+                # print(i, sub_generated_text)
             if sub_generated_text == clean_text:
-                start_ind = i
-                end_ind = mid
-                break
-            if sub_generated_text in clean_text:
-                lo = mid + 1
+                end_token = tokenizer.decode(tokenized_generated_text[mid - 1:mid])
+                if end_token.strip() == '':
+                    hi = mid - 1
+                else:
+                    start_ind = i
+                    end_ind = mid
+                    break
             else:
-                hi = mid - 1            
+                if len(sub_generated_text) < len(clean_text):
+                    lo = mid + 1
+                else:
+                    hi = mid - 1            
     
     # tokenized_clean_text = tokenizer(clean_text, add_special_tokens=False)['input_ids']
     # print(tokenized_clean_text)
@@ -695,14 +707,3 @@ def ParameterClip_v2(model):
 #     eigenIndicator = np.log10(np.prod(s))
 #     print(s)
 #     return eigenIndicator, s
-
-
-
-    
-
-
-
-
-
-
-

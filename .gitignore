@@ -60,7 +60,7 @@ tmp/*
 output/**
 PBS_run.sh.*
 benchmark/HumanEval/human_eval/rust/*
-*.txt\
+*.txt
 vastai/
 vastai/*.zip
 !benchmark/*/*.parquet

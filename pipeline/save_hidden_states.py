@@ -21,12 +21,13 @@ import dataeval.w_ds1000 as ds1000
 import dataeval.w_repoeval as repo_eval
 import dataeval.w_evocodebench as evocodebench
 import dataeval.w_repoexec as repo_exec
+import dataeval.w_deveval as dev_eval
 from dataeval.w_humaneval import cleanup_code as human_eval_cleanup_code
 import models
 import utils
 from func.metric import *
 
-passed_input_len_task = ['repo_eval', 'evocodebench', 'repoexec']
+passed_input_len_task = ['repo_eval', 'evocodebench', 'repoexec', 'dev_eval']
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='llama-13b-hf')
@@ -86,6 +87,8 @@ def get_dataset_fn(data_name):
         return evocodebench.get_dataset
     if data_name == 'repoexec':
         return repo_exec.get_dataset
+    if data_name == 'dev_eval':
+        return dev_eval.get_dataset
     raise ValueError(f"Unknown dataset {data_name}")
 
 
@@ -124,9 +127,11 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         if batch['task_id'][0] in old_sequences:
             sequences.append(old_sequences[batch['task_id'][0]])
             continue
-        if os.path.exists(out_dir_task_id):
+        if os.path.exists(os.path.join(cache_dir, f'generation_sequences_output_{task_id_path}.pkl')):
+            print(f'Generated {task_id_path}!')
             continue # generated
-
+        else:
+            print(f'Processing {task_id_path} ...')
         input_ids = batch['input_ids'].to(device)
         print(f"input_ids shape: {input_ids.shape}")
         if args.dataset not in passed_input_len_task  and (input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9):
@@ -172,9 +177,6 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
                     all_token_hidden_states_layer_list[layer] = {}
                 all_token_hidden_states_layer_list[layer].update(all_token_hidden_states_layer)
             # return hidden_state
-            
-            for gen_ids in generations:
-                generations_decoded.append(tokenizer.decode(gen_ids, skip_special_tokens=True))
                 
             del dict_outputs
             gc.collect()
@@ -185,7 +187,9 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
             torch.cuda.empty_cache()
             num_gens -= len(generation)
             off_set += len(generation)
-            
+        
+        for gen_ids in generations:
+                generations_decoded.append(tokenizer.decode(gen_ids, skip_special_tokens=True))
         for layer in layers_to_process:
             layer_embeddings = all_token_hidden_states_layer_list[layer]
             layer_embeddings_dict = dict(

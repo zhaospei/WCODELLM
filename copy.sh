@@ -1,3 +1,1 @@
-#!/bin/bash
-# cd /home/trang-n/WCODELLM_MULTILANGUAGE
-scp /home/trang-n/WCODELLM_MULTILANGUAGE/output/1730577738521_deepseek-ai_deepseek-coder-1.3b-base_human_eval_cpp_-1/0.pkl dungbt@112.137.129.161:
+ scp /home/trang-n/WCODELLM_MULTILANGUAGE/output/Qwen_Qwen2.5-Coder-3B-Instruct_mbpp_python_1_12_18_24_28_32_36/output2/LFCLF_embedding_mbpp_Qwen_Qwen2.5-Coder-3B-Instruct_36.parquet dungbt@112.137.129.161:/drive2/tuandung/WCODELLM/output/

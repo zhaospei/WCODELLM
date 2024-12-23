@@ -61,7 +61,7 @@ def extract_generation_code(example: str, output, lang_code: str, verbose: bool=
 
     try:
         # code_block: str = re.findall(f'```{lang.lower()}\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
-        code_block: str = re.findall(r'```(?:python)?\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+        code_block: str = re.findall(f'```(?:{lang.lower()})?\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
 
         if verbose:
             print(">>> Task: {}\n{}".format(task_id, code_block))

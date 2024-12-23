@@ -175,7 +175,8 @@ def extract_generation_code(example, output, lang_code: str, verbose: bool=False
     try:
         # print(output)
         # code_block: str = re.findall(f'```{lang.lower()}\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
-        code_block: str = re.findall(r'```(?:python)?\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+        code_block: str = re.findall(f'```(?:{lang.lower()})?\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
+        
         # print(code_block)
 
         # Remove main
@@ -192,16 +193,16 @@ def extract_generation_code(example, output, lang_code: str, verbose: bool=False
             while start - indent >= 0 and code_block[start - indent-1] == ' ':
                 indent += 1
             
-            try:
-                end = code_block.rindex('\n' + ' '*indent + '}')
-            except:
-                end = len(code_block)
+            # try:
+            #     end = code_block.rindex('\n' + ' '*indent + '}')
+            # except:
+            end = len(code_block)
         except:
             start = 0
-            try:
-                end = code_block.rindex('\n' + ' '*indent + '}')
-            except:
-                end = len(code_block)
+            # try:
+            #     end = code_block.rindex('\n' + ' '*indent + '}')
+            # except:
+            end = len(code_block)
 
         # print(len(code_block), start, end)
         body = code_block[start:end]

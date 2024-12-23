@@ -79,7 +79,7 @@ data_root = "/drive2/tuandung/WCODELLM/benchmark/MBPP/data"
 continue_from = '/drive2/tuandung/WCODELLM/jaist/magic_coder/LFCLF_embedding_mbpp_ise-uiuc_Magicoder-S-DS-6.7B_1.parquet'
 kwargs_handlers = [DistributedDataParallelKwargs(find_unused_parameters=True)]
 accelerator = Accelerator(mixed_precision="bf16", kwargs_handlers=kwargs_handlers)
-# model_name = 'codellama/CodeLlama-7b-Instruct-hf'
+model_name = 'codellama/CodeLlama-7b-Instruct-hf'
 # model_name = 'Qwen/Qwen2.5-Coder-3B-Instruct'
 model_name = 'ise-uiuc/Magicoder-S-DS-6.7B'
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
