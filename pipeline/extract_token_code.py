@@ -81,9 +81,6 @@ def main():
 
     clean_generations_range_all = {}
     
-    # dataset = dataset[:10]
-    # print(dataset)
-
     for example in tqdm.tqdm(dataset, total=len(dataset)):
         has_error = False
         task_id_path =  str(example['task_id']).replace('/','_').replace('[','_').replace(']','_')
@@ -91,9 +88,7 @@ def main():
             task_id_path = f'tensor({task_id_path})'
         task_generation_seqs_path = f'generation_sequences_output_{task_id_path}.pkl'
         task_generation_seqs_path = os.path.join(args.generate_dir, task_generation_seqs_path)
-        # print(task_id_path)
-        # if task_id_path == 'arctic.hooks.register_get_auth_hook':
-        #     break
+        # print(task_generation_seqs_path)
         if not os.path.exists(task_generation_seqs_path):
             print(f'File {task_id_path} not found. Skipping...')
             continue
@@ -106,8 +101,6 @@ def main():
         clean_generations_range = []
         for generated_ids in task_generation_seqs['generations_ids']:
             gen = tokenizer.decode(generated_ids, skip_special_tokens=True)
-            # print(f'Task: {task_id_path}')
-            # print("Gen\n", gen)
             clean_generation_decoded = dataset_egc(example, gen, args.language)
             start_ind, end_ind = getCleanGenerationRange(generated_ids.tolist(), clean_generation_decoded, tokenizer)
             if start_ind is None or end_ind is None:
@@ -115,13 +108,10 @@ def main():
                 # print("gen:", gen)
                 # print("clean_generation_decoded:", clean_generation_decoded)
                 print(f'Cannot find clean generation range for {task_id_path}')
-                start_ind, end_ind = getGenerationRange(generated_ids.tolist(), tokenizer)
-                clean_generations_range.append((start_ind, end_ind, has_error))
+                clean_generations_range.append((getGenerationRange(generated_ids.tolist(), tokenizer), has_error))
             else:
                 clean_generations_range.append((start_ind, end_ind, has_error))
-            # extracted_code = tokenizer.decode(generated_ids.tolist()[start_ind:end_ind])
-            # print(repr(extracted_code))
-            # print("Clean_gen\n", clean_generation_decoded)
+
         clean_generations_range_all[task_id_path] = clean_generations_range
     # print(clean_generations_range_all)
     for layer in args.layers:
