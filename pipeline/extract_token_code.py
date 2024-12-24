@@ -125,7 +125,12 @@ def main():
             "last_token_embedding",
             "first_token_code_embedding",
             "last_token_code_embedding",
-            "has_error"
+            "has_error",
+            "first_code_index",
+            "last_code_index",
+            "first_index",
+            "last_index",
+            "generated_ids"
         ])
         found_sample = 0
         for example in tqdm.tqdm(dataset, total=len(dataset)):
@@ -189,6 +194,11 @@ def main():
                     "last_token_code_embedding": last_token_code_embedding,
                     "has_error": has_error,
                     "extracted_code": extracted_code,
+                    "first_code_index": start_code_ind,
+                    "last_code_index" : end_code_ind - 1,
+                    "first_index": start_ind,
+                    "last_index": end_ind - 1,
+                    "generated_ids":generated_ids.tolist()
                 }, 
                 ignore_index=True)
                     # print(extracted_code)         
