@@ -93,7 +93,7 @@ def main():
             print(f'File {task_id_path} not found. Skipping...')
             continue
         
-        print(f'Found {task_id_path}. Processing...')
+        # print(f'Found {task_id_path}. Processing...')
         
         with open(task_generation_seqs_path, 'rb') as f:
             task_generation_seqs = pickle.load(f)
@@ -127,16 +127,21 @@ def main():
             "last_token_code_embedding",
             "has_error"
         ])
-        
+        found_sample = 0
         for example in tqdm.tqdm(dataset, total=len(dataset)):
             task_id_path =  str(example['task_id']).replace('/','_').replace('[','_').replace(']','_')
             if args.dataset == 'mbpp' or args.dataset == 'ds1000':
                 task_id_path = f'tensor({task_id_path})'
             task_generation_seqs_path = f'generation_sequences_output_{task_id_path}.pkl'
             task_generation_seqs_path = os.path.join(args.generate_dir, task_generation_seqs_path)
+            # if task_id_path == 'arctic.hooks.register_get_auth_hook':
+            #     break
             if not os.path.exists(task_generation_seqs_path):
                 # print(f'File {task_id_path} not found. Skipping...')
                 continue
+            with open(task_generation_seqs_path, 'rb') as f:
+                task_generation_seqs = pickle.load(f)
+            found_sample += 1
             clean_generations_range = clean_generations_range_all[task_id_path]
             task_embedding_path = f'all_token_embedding_{task_id_path}_{layer}.pkl'
             task_embedding_path = os.path.join(args.generate_dir, task_embedding_path)
@@ -159,29 +164,38 @@ def main():
                 num_tokens = end_ind - start_ind
                 layer_embedding = task_embedding['layer_embeddings'][j]
                 # print(f'{start_ind} {end_ind} {start_code_ind} {end_code_ind}')
-                try:
-                    first_token_embedding = layer_embedding[start_ind].tolist()
-                    last_token_embedding = layer_embedding[end_ind - 1].tolist()
-                    first_token_code_embedding = layer_embedding[start_code_ind].tolist()
-                    last_token_code_embedding = layer_embedding[end_code_ind - 1].tolist()
-                    extracted_code = tokenizer.decode(generated_ids.tolist()[start_code_ind:end_code_ind], skip_special_tokens=True)
-                    results = results._append({
-                        "task_id": task_id, 
-                        "completion_id": completion_id,
-                        "num_tokens": num_tokens,
-                        "generation": generation, 
-                        "first_token_embedding": first_token_embedding, 
-                        "last_token_embedding": last_token_embedding,
-                        "first_token_code_embedding": first_token_code_embedding,
-                        "last_token_code_embedding": last_token_code_embedding,
-                        "has_error": has_error,
-                        "extracted_code": extracted_code,
-                    }, 
-                    ignore_index=True)
-                except Exception as e:
-                    print(f'Error in {task_id} {completion_id}')
-                    print(e)
-                    continue
+                # try:
+                start_ind = max(0, start_ind - 1)
+                end_ind = end_ind - 1
+                start_code_ind = max(0, start_code_ind)
+                end_code_ind = end_code_ind - 1
+                first_token_embedding = layer_embedding[start_ind].tolist()
+                # print(len(layer_embedding), end_ind, has_error, start_ind, end_code_ind)
+                # print(len(generated_ids))
+                # print(generated_ids)
+                last_token_embedding = layer_embedding[end_ind - 1].tolist()
+                first_token_code_embedding = layer_embedding[start_code_ind].tolist()
+                
+                last_token_code_embedding = layer_embedding[end_code_ind - 1].tolist()
+                extracted_code = tokenizer.decode(generated_ids.tolist()[start_code_ind:end_code_ind], skip_special_tokens=True)
+                results = results._append({
+                    "task_id": task_id, 
+                    "completion_id": completion_id,
+                    "num_tokens": num_tokens,
+                    "generation": generation, 
+                    "first_token_embedding": first_token_embedding, 
+                    "last_token_embedding": last_token_embedding,
+                    "first_token_code_embedding": first_token_code_embedding,
+                    "last_token_code_embedding": last_token_code_embedding,
+                    "has_error": has_error,
+                    "extracted_code": extracted_code,
+                }, 
+                ignore_index=True)
+                    # print(extracted_code)         
+                # except:
+                    # print(f'Error in {task_id} {completion_id}')
+                    # continue
+        print(f'Found {found_sample} / {len(dataset)}')
         model_name = args.model_name.replace('/', '_')
         results.to_parquet(os.path.join(output_dir, f'LFCLF_embedding_{args.dataset}_{model_name}_{layer}.parquet'))
             
