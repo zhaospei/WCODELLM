@@ -30,7 +30,9 @@ parser.add_argument('--dataset', type=str, default='human_eval')
 parser.add_argument('--model_name', type=str, default='opt-13b')
 parser.add_argument("--language", default="python", type=str,)
 parser.add_argument("--layers", default=[-1], type=int, nargs='+')
+parser.add_argument("--type", default="LFCLF", type=str)
 args = parser.parse_args()
+   
 
 def get_dataset_fn(data_name):
     if data_name == 'human_eval':
@@ -65,7 +67,7 @@ def extract_generation_code_fun(data_name):
     if data_name == 'dev_eval':
         return deveval_eval_egc
 
-def main():
+def process_lfclf():
     tokenizer = models.load_tokenizer(args.model_name)
     if 'chat' or 'instruct' in args.model_name.lower():
         instruction = True
@@ -198,7 +200,7 @@ def main():
                     "last_code_index" : end_code_ind - 1,
                     "first_index": start_ind,
                     "last_index": end_ind - 1,
-                    "generated_ids":generated_ids.tolist()
+                    "generated_ids": generated_ids.tolist()
                 }, 
                 ignore_index=True)
                     # print(extracted_code)         
@@ -211,5 +213,130 @@ def main():
             
     return
 
+def process_last_line():
+    import tree_sitter_python as tspython
+    from tree_sitter import Language, Parser
+    # code_parser = Parser()
+    # PY_LANGUAGE = Language('build/my-languages.so', 'python')
+    PY_LANGUAGE = Language(tspython.language())
+    code_parser = Parser(PY_LANGUAGE)
+    # parser.set_language(PY_LANGUAGE)
+    tokenizer = models.load_tokenizer(args.model_name)
+    if 'chat' or 'instruct' in args.model_name.lower():
+        instruction = True
+    else:
+        instruction = False
+    dataset = get_dataset_fn(args.dataset)(tokenizer, language=args.language, instruction=instruction)
+    dataset_egc = extract_generation_code_fun(args.dataset)
+    # dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
+    
+    output_dir = args.generate_dir.replace('temp', 'output')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    last_line_token_ids_list_all = {}
+    
+    for example in tqdm.tqdm(dataset, total=len(dataset)):
+        has_error = False
+        task_id_path =  str(example['task_id']).replace('/','_').replace('[','_').replace(']','_')
+        if args.dataset == 'mbpp' or args.dataset == 'ds1000':
+            task_id_path = f'tensor({task_id_path})'
+        if args.dataset == 'dev_eval':
+            function_name = example['task_id'].split('.')[-1]
+        else:
+            raise ValueError(f"Not support dataset {args.dataset} yet.")
+        task_generation_seqs_path = f'generation_sequences_output_{task_id_path}.pkl'
+        task_generation_seqs_path = os.path.join(args.generate_dir, task_generation_seqs_path)
+        # print(task_generation_seqs_path)
+        if not os.path.exists(task_generation_seqs_path):
+            print(f'File {task_id_path} not found. Skipping...')
+            continue
+        
+        # print(f'Found {task_id_path}. Processing...')
+        
+        with open(task_generation_seqs_path, 'rb') as f:
+            task_generation_seqs = pickle.load(f)
+        
+        last_line_token_ids_list = []
+        for generated_ids in task_generation_seqs['generations_ids']:
+            gen = tokenizer.decode(generated_ids, skip_special_tokens=True)
+            clean_generation_decoded = dataset_egc(example, gen, args.language)
+            # print(clean_generation_decoded)
+            last_line_token_ids = getLineGenerationTokens(generated_ids.tolist(), clean_generation_decoded, tokenizer, code_parser, function_name)
+            last_line_token_ids_list.append(last_line_token_ids)
+            # # print(last_line_token_ids)
+            # for i in last_line_token_ids:
+            #     print(repr(tokenizer.decode(generated_ids.tolist()[i])))
+
+        last_line_token_ids_list_all[task_id_path] = last_line_token_ids_list
+    
+    for layer in args.layers:
+        print(f'Processing layer {layer}')
+        results = pd.DataFrame(columns=[
+            "task_id", 
+            "completion_id",
+            "generation", 
+            "generated_ids",
+            "last_line_token_embeddings"
+        ])
+        found_sample = 0
+        for example in tqdm.tqdm(dataset, total=len(dataset)):
+            task_id_path =  str(example['task_id']).replace('/','_').replace('[','_').replace(']','_')
+            if args.dataset == 'mbpp' or args.dataset == 'ds1000':
+                task_id_path = f'tensor({task_id_path})'
+            task_generation_seqs_path = f'generation_sequences_output_{task_id_path}.pkl'
+            task_generation_seqs_path = os.path.join(args.generate_dir, task_generation_seqs_path)
+            # if task_id_path == 'arctic.hooks.register_get_auth_hook':
+            #     break
+            if not os.path.exists(task_generation_seqs_path):
+                # print(f'File {task_id_path} not found. Skipping...')
+                continue
+            with open(task_generation_seqs_path, 'rb') as f:
+                task_generation_seqs = pickle.load(f)
+            found_sample += 1
+            last_line_token_ids_list = last_line_token_ids_list_all[task_id_path]
+            task_embedding_path = f'all_token_embedding_{task_id_path}_{layer}.pkl'
+            task_embedding_path = os.path.join(args.generate_dir, task_embedding_path)
+            if not os.path.exists(task_embedding_path):
+                print(f'File {task_id_path} {layer} not found. Skipping...')
+                continue
+            
+            with open(task_embedding_path, 'rb') as f:
+                task_embedding = pickle.load(f)
+            
+            # task_last_token_embedding = []
+            for j in range(len(task_generation_seqs['generations'])):
+                task_id = example['task_id']
+                completion_id = str(task_id) + '_' + str(j)
+                # num_tokens = task_generation_seqs['num_tokens'][j]
+                generation = task_generation_seqs["generations"][j]
+                generated_ids = task_generation_seqs["generations_ids"][j]
+                last_line_token_ids = last_line_token_ids_list[j]
+                layer_embedding = task_embedding['layer_embeddings'][j]
+                last_line_token_embeddings = []
+                for id in last_line_token_ids:
+                    last_line_token_embeddings.append(layer_embedding[id - 1].tolist())
+                results = results._append({
+                    "task_id": task_id, 
+                    "completion_id": completion_id,
+                    "generation": generation,
+                    "generated_ids": generated_ids.tolist(),
+                    "last_line_token_embeddings": last_line_token_embeddings,
+                    "last_line_token_ids": last_line_token_ids
+                }, 
+                ignore_index=True)
+        
+        print(f'Found {found_sample} / {len(dataset)}')
+        model_name = args.model_name.replace('/', '_')
+        results.to_parquet(os.path.join(output_dir, f'last_token_line_embedding_{args.dataset}_{model_name}_{layer}.parquet'))
+    
+    return
+
+
 if __name__ == '__main__':
-    task_runner = main()
+    if args.type == 'LFCLF':
+        process_lfclf()
+    elif args.type == 'last_line':
+        process_last_line()
+    else:
+        raise ValueError(f"Unknown type {args.type}")
