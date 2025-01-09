@@ -184,6 +184,8 @@ def getLineGenerationTokens(tokenized_generated_text, clean_text, tokenizer, par
             if decoded_line != "" and not decoded_line.startswith('#'):
                 last_line_tokens.append(i)
             fl_token = i
+    if end_ind > 0:
+        last_line_tokens.append(end_ind - 1)
     return last_line_tokens
 
 ### 根据GT答案及生成回答计算回答的Rouge Score
