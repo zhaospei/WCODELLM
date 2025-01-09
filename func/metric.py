@@ -187,8 +187,8 @@ def getLineGenerationTokens(tokenized_generated_text, clean_text, tokenizer, par
             if decoded_line != "" and not decoded_line.startswith('#'):
                 last_line_tokens.append(i)
             fl_token = i
-    if end_ind > 0:
-        last_line_tokens.append(end_ind)
+    if end_ind > 0 and (end_ind - 1) not in last_line_tokens:
+        last_line_tokens.append(end_ind - 1)
     return last_line_tokens
 
 def get_function_name(question: str, lang: str):
