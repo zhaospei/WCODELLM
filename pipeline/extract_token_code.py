@@ -209,13 +209,13 @@ def process_lfclf():
     return
 
 def process_last_line():
-    # import tree_sitter_python as tspython
+    import tree_sitter_python as tspython
     from tree_sitter import Language, Parser
     code_parser = Parser()
-    PY_LANGUAGE = Language('/home/trang-n/WCODELLM_MULTILANGUAGE/build/my-languages.so', 'python')
-    # PY_LANGUAGE = Language(tspython.language())
-    # code_parser = Parser(PY_LANGUAGE)
-    code_parser.set_language(PY_LANGUAGE)
+    # PY_LANGUAGE = Language('/home/trang-n/WCODELLM_MULTILANGUAGE/build/my-languages.so', 'python')
+    PY_LANGUAGE = Language(tspython.language())
+    code_parser = Parser(PY_LANGUAGE)
+    # code_parser.set_language(PY_LANGUAGE)
     tokenizer = models.load_tokenizer(args.model_name)
     if 'chat' or 'instruct' in args.model_name.lower():
         instruction = True
@@ -238,9 +238,12 @@ def process_last_line():
             task_id_path = f'tensor({task_id_path})'
         if args.dataset == 'dev_eval':
             function_name = example['task_id'].split('.')[-1]
+        elif args.dataset == 'human_eval':
+            function_name = get_function_name(example["original_prompt"].strip(), args.language)
         else:
             # raise ValueError(f"Not support dataset {args.dataset} yet.")
             function_name = None
+            # function_name = get_function_name(, args.language)
         task_generation_seqs_path = f'generation_sequences_output_{task_id_path}.pkl'
         task_generation_seqs_path = os.path.join(args.generate_dir, task_generation_seqs_path)
         # print(task_generation_seqs_path)
@@ -257,6 +260,8 @@ def process_last_line():
         for generated_ids in task_generation_seqs['generations_ids']:
             gen = tokenizer.decode(generated_ids, skip_special_tokens=True)
             clean_generation_decoded = dataset_egc(example, gen, args.language)
+            if function_name is None:
+                function_name = get_function_name(clean_generation_decoded, args.language)
             last_line_token_ids = getLineGenerationTokens(generated_ids.tolist(), clean_generation_decoded, tokenizer, code_parser, function_name)
             last_line_token_ids_list.append(last_line_token_ids)
 
