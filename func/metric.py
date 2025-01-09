@@ -171,7 +171,10 @@ def getBodyRange(tokenized_generated_text, clean_text, tokenizer, parser, functi
         return getCleanGenerationRange(tokenized_generated_text, func_body_clean_text, tokenizer)
 
 def getLineGenerationTokens(tokenized_generated_text, clean_text, tokenizer, parser, function_name):
-    start_ind, end_ind = getBodyRange(tokenized_generated_text, clean_text, tokenizer, parser, function_name)
+    if function_name is None:
+        start_ind, end_ind = getCleanGenerationRange(tokenized_generated_text, clean_text, tokenizer)
+    else:
+        start_ind, end_ind = getBodyRange(tokenized_generated_text, clean_text, tokenizer, parser, function_name)
     if start_ind is None or end_ind is None:
         print(f"Cant extract function body token range in {function_name}")
         start_ind = 0
@@ -185,7 +188,7 @@ def getLineGenerationTokens(tokenized_generated_text, clean_text, tokenizer, par
                 last_line_tokens.append(i)
             fl_token = i
     if end_ind > 0:
-        last_line_tokens.append(end_ind - 1)
+        last_line_tokens.append(end_ind)
     return last_line_tokens
 
 ### 根据GT答案及生成回答计算回答的Rouge Score

@@ -239,7 +239,8 @@ def process_last_line():
         if args.dataset == 'dev_eval':
             function_name = example['task_id'].split('.')[-1]
         else:
-            raise ValueError(f"Not support dataset {args.dataset} yet.")
+            # raise ValueError(f"Not support dataset {args.dataset} yet.")
+            function_name = None
         task_generation_seqs_path = f'generation_sequences_output_{task_id_path}.pkl'
         task_generation_seqs_path = os.path.join(args.generate_dir, task_generation_seqs_path)
         # print(task_generation_seqs_path)
