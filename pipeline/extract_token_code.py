@@ -170,21 +170,19 @@ def process_lfclf():
                 start_ind, end_ind = getGenerationRange(generated_ids.tolist(), tokenizer)
                 num_tokens = end_ind - start_ind
                 layer_embedding = task_embedding['layer_embeddings'][j]
-                # print(f'{start_ind} {end_ind} {start_code_ind} {end_code_ind}')
-                # try:
+
+                extracted_code = tokenizer.decode(generated_ids.tolist()[start_code_ind:end_code_ind], skip_special_tokens=True)
+
                 start_ind = max(0, start_ind - 1)
                 end_ind = end_ind - 1
                 start_code_ind = max(0, start_code_ind)
                 end_code_ind = end_code_ind - 1
+                
                 first_token_embedding = layer_embedding[start_ind].tolist()
-                # print(len(layer_embedding), end_ind, has_error, start_ind, end_code_ind)
-                # print(len(generated_ids))
-                # print(generated_ids)
                 last_token_embedding = layer_embedding[end_ind - 1].tolist()
                 first_token_code_embedding = layer_embedding[start_code_ind].tolist()
-                
                 last_token_code_embedding = layer_embedding[end_code_ind - 1].tolist()
-                extracted_code = tokenizer.decode(generated_ids.tolist()[start_code_ind:end_code_ind], skip_special_tokens=True)
+
                 results = results._append({
                     "task_id": task_id, 
                     "completion_id": completion_id,
@@ -203,10 +201,7 @@ def process_lfclf():
                     "generated_ids": generated_ids.tolist()
                 }, 
                 ignore_index=True)
-                    # print(extracted_code)         
-                # except:
-                    # print(f'Error in {task_id} {completion_id}')
-                    # continue
+
         print(f'Found {found_sample} / {len(dataset)}')
         model_name = args.model_name.replace('/', '_')
         results.to_parquet(os.path.join(output_dir, f'LFCLF_embedding_{args.dataset}_{model_name}_{layer}.parquet'))
@@ -214,13 +209,13 @@ def process_lfclf():
     return
 
 def process_last_line():
-    import tree_sitter_python as tspython
+    # import tree_sitter_python as tspython
     from tree_sitter import Language, Parser
-    # code_parser = Parser()
-    # PY_LANGUAGE = Language('build/my-languages.so', 'python')
-    PY_LANGUAGE = Language(tspython.language())
-    code_parser = Parser(PY_LANGUAGE)
-    # parser.set_language(PY_LANGUAGE)
+    code_parser = Parser()
+    PY_LANGUAGE = Language('/home/trang-n/WCODELLM_MULTILANGUAGE/build/my-languages.so', 'python')
+    # PY_LANGUAGE = Language(tspython.language())
+    # code_parser = Parser(PY_LANGUAGE)
+    code_parser.set_language(PY_LANGUAGE)
     tokenizer = models.load_tokenizer(args.model_name)
     if 'chat' or 'instruct' in args.model_name.lower():
         instruction = True
@@ -261,12 +256,8 @@ def process_last_line():
         for generated_ids in task_generation_seqs['generations_ids']:
             gen = tokenizer.decode(generated_ids, skip_special_tokens=True)
             clean_generation_decoded = dataset_egc(example, gen, args.language)
-            # print(clean_generation_decoded)
             last_line_token_ids = getLineGenerationTokens(generated_ids.tolist(), clean_generation_decoded, tokenizer, code_parser, function_name)
             last_line_token_ids_list.append(last_line_token_ids)
-            # # print(last_line_token_ids)
-            # for i in last_line_token_ids:
-            #     print(repr(tokenizer.decode(generated_ids.tolist()[i])))
 
         last_line_token_ids_list_all[task_id_path] = last_line_token_ids_list
     
@@ -286,10 +277,7 @@ def process_last_line():
                 task_id_path = f'tensor({task_id_path})'
             task_generation_seqs_path = f'generation_sequences_output_{task_id_path}.pkl'
             task_generation_seqs_path = os.path.join(args.generate_dir, task_generation_seqs_path)
-            # if task_id_path == 'arctic.hooks.register_get_auth_hook':
-            #     break
             if not os.path.exists(task_generation_seqs_path):
-                # print(f'File {task_id_path} not found. Skipping...')
                 continue
             with open(task_generation_seqs_path, 'rb') as f:
                 task_generation_seqs = pickle.load(f)
@@ -304,18 +292,17 @@ def process_last_line():
             with open(task_embedding_path, 'rb') as f:
                 task_embedding = pickle.load(f)
             
-            # task_last_token_embedding = []
             for j in range(len(task_generation_seqs['generations'])):
                 task_id = example['task_id']
                 completion_id = str(task_id) + '_' + str(j)
-                # num_tokens = task_generation_seqs['num_tokens'][j]
                 generation = task_generation_seqs["generations"][j]
                 generated_ids = task_generation_seqs["generations_ids"][j]
                 last_line_token_ids = last_line_token_ids_list[j]
                 layer_embedding = task_embedding['layer_embeddings'][j]
                 last_line_token_embeddings = []
                 for id in last_line_token_ids:
-                    last_line_token_embeddings.append(layer_embedding[id - 1].tolist())
+                    chosen_id = max(0, id - 2)
+                    last_line_token_embeddings.append(layer_embedding[chosen_id].tolist())
                 results = results._append({
                     "task_id": task_id, 
                     "completion_id": completion_id,
@@ -328,7 +315,7 @@ def process_last_line():
         
         print(f'Found {found_sample} / {len(dataset)}')
         model_name = args.model_name.replace('/', '_')
-        results.to_parquet(os.path.join(output_dir, f'last_token_line_embedding_{args.dataset}_{model_name}_{layer}.parquet'))
+        results.to_parquet(os.path.join(output_dir, f'last_code_token_line_embedding_{args.dataset}_{model_name}_{layer}.parquet'))
     
     return
 

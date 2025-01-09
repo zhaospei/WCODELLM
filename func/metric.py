@@ -173,7 +173,9 @@ def getBodyRange(tokenized_generated_text, clean_text, tokenizer, parser, functi
 def getLineGenerationTokens(tokenized_generated_text, clean_text, tokenizer, parser, function_name):
     start_ind, end_ind = getBodyRange(tokenized_generated_text, clean_text, tokenizer, parser, function_name)
     if start_ind is None or end_ind is None:
-        raise ValueError(f"Cant extract function body token range in {function_name}")
+        print(f"Cant extract function body token range in {function_name}")
+        start_ind = 0
+        end_ind = len(tokenized_generated_text)
     last_line_tokens = []
     fl_token = start_ind
     for i in range(start_ind, end_ind):
