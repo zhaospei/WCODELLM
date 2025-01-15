@@ -108,9 +108,17 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         stop_words = dataset[0]['stopwords']
     else:
         stop_words = []
-    if args.fraction_of_data_to_use < 1.0:
-        dataset = dataset.train_test_split(test_size=(1 - args.fraction_of_data_to_use), seed=seed)['train']
+    # print(len(dataset))
+    # print(dataset[-250])
+    # print(dataset)
+    # dataset = list(dataset)[-250:]
+    # print(dataset)    
+    num_samples = len(dataset)
+    dataset = dataset.select(range(num_samples - 250, num_samples))
+    # if args.fraction_of_data_to_use < 1.0:
+        # dataset = dataset.train_test_split(test_size=(1 - args.fraction_of_data_to_use), seed=seed)['train']
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
+    
     print('len dataset', len(dataloader))
     if old_sequences is None:
         old_sequences = []
