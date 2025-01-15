@@ -326,11 +326,138 @@ def process_last_line():
     
     return
 
+def process_min_prob_token():
+
+    tokenizer = models.load_tokenizer(args.model_name)
+    if 'chat' or 'instruct' in args.model_name.lower():
+        instruction = True
+    else:
+        instruction = False
+    dataset = get_dataset_fn(args.dataset)(tokenizer, language=args.language, instruction=instruction)
+    dataset_egc = extract_generation_code_fun(args.dataset)
+    # dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
+    
+    output_dir = args.generate_dir.replace('temp', 'output')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    clean_generations_range_all = {}
+    
+    for example in tqdm.tqdm(dataset, total=len(dataset)):
+        has_error = False
+        task_id_path =  str(example['task_id']).replace('/','_').replace('[','_').replace(']','_')
+        if args.dataset == 'mbpp' or args.dataset == 'ds1000':
+            task_id_path = f'tensor({task_id_path})'
+        # if args.dataset == 'dev_eval':
+        #     function_name = example['task_id'].split('.')[-1]
+        # elif args.dataset == 'human_eval':
+        #     function_name = get_function_name(example["original_prompt"].strip(), args.language)
+        # else:
+        #     # raise ValueError(f"Not support dataset {args.dataset} yet.")
+        #     function_name = None
+        #     # function_name = get_function_name(, args.language)
+        task_generation_seqs_path = f'generation_sequences_output_{task_id_path}.pkl'
+        task_generation_seqs_path = os.path.join(args.generate_dir, task_generation_seqs_path)
+        # print(task_generation_seqs_path)
+        if not os.path.exists(task_generation_seqs_path):
+            print(f'File {task_id_path} not found. Skipping...')
+            continue
+        
+        # print(f'Found {task_id_path}. Processing...')
+        
+        with open(task_generation_seqs_path, 'rb') as f:
+            task_generation_seqs = pickle.load(f)
+        
+        clean_generations_range = []
+        for generated_ids, prob_scores in zip(task_generation_seqs['generations_ids'], task_generation_seqs['softmax_scores']):
+            gen = tokenizer.decode(generated_ids, skip_special_tokens=True)
+            clean_generation_decoded = dataset_egc(example, gen, args.language)
+            start_ind, end_ind = getCleanGenerationRange(generated_ids.tolist(), clean_generation_decoded, tokenizer)
+            if start_ind is None or end_ind is None:
+                has_error = True
+                # print("gen:", gen)
+                # print("clean_generation_decoded:", clean_generation_decoded)
+                print(f'Cannot find clean generation range for {task_id_path}')
+                start_ind, end_ind = getGenerationRange(generated_ids.tolist(), tokenizer)
+            
+            # clean_generations_range.append((start_ind, end_ind, has_error))
+            clean_generations_prob_scores = torch.tensor(prob_scores[start_ind:end_ind])
+            prob_score , min_prob_ind = torch.min(clean_generations_prob_scores, dim=0)
+            clean_generations_range.append((start_ind, end_ind, int(min_prob_ind.item()), prob_score.item()))
+            
+            
+
+        clean_generations_range_all[task_id_path] = clean_generations_range
+    
+    for layer in args.layers:
+        print(f'Processing layer {layer}')
+        results = pd.DataFrame(columns=[
+            "task_id", 
+            "completion_id",
+            "generation", 
+            "generated_ids",
+            "min_prob_token_embeddings",
+            "min_prob_token_ind",
+            "min_prob_token_score",
+            "seq_prob_scores",
+        ])
+        found_sample = 0
+        for example in tqdm.tqdm(dataset, total=len(dataset)):
+            task_id_path =  str(example['task_id']).replace('/','_').replace('[','_').replace(']','_')
+            if args.dataset == 'mbpp' or args.dataset == 'ds1000':
+                task_id_path = f'tensor({task_id_path})'
+            task_generation_seqs_path = f'generation_sequences_output_{task_id_path}.pkl'
+            task_generation_seqs_path = os.path.join(args.generate_dir, task_generation_seqs_path)
+            if not os.path.exists(task_generation_seqs_path):
+                continue
+            with open(task_generation_seqs_path, 'rb') as f:
+                task_generation_seqs = pickle.load(f)
+            found_sample += 1
+            clean_generations_range = clean_generations_range_all[task_id_path]
+            task_embedding_path = f'all_token_embedding_{task_id_path}_{layer}.pkl'
+            task_embedding_path = os.path.join(args.generate_dir, task_embedding_path)
+            if not os.path.exists(task_embedding_path):
+                print(f'File {task_id_path} {layer} not found. Skipping...')
+                continue
+            
+            with open(task_embedding_path, 'rb') as f:
+                task_embedding = pickle.load(f)
+            
+            for j in range(len(task_generation_seqs['generations'])):
+                task_id = example['task_id']
+                completion_id = str(task_id) + '_' + str(j)
+                generation = task_generation_seqs["generations"][j]
+                generated_ids = task_generation_seqs["generations_ids"][j]
+                seq_prob_scores = torch.tensor(task_generation_seqs['softmax_scores'][j]).numpy().tolist()
+                start_code_ind, end_code_ind, min_prob_ind, min_prob_score = clean_generations_range[j]
+                layer_embedding = task_embedding['layer_embeddings'][j]
+                min_prob_ind = start_code_ind + min_prob_ind
+                min_prob_line_token_embeddings = layer_embedding[max(0, min_prob_ind - 1)].tolist()
+                # print(min_prob_score.float())
+                results = results._append({
+                    "task_id": task_id, 
+                    "completion_id": completion_id,
+                    "generation": generation,
+                    "generated_ids": generated_ids.tolist(),
+                    "min_prob_token_embeddings": min_prob_line_token_embeddings,
+                    "min_prob_token_ind": min_prob_ind,
+                    "min_prob_token_score": min_prob_score,
+                    "seq_prob_scores": seq_prob_scores,
+                }, 
+                ignore_index=True)
+        
+        print(f'Found {found_sample} / {len(dataset)}')
+        model_name = args.model_name.replace('/', '_')
+        results.to_parquet(os.path.join(output_dir, f'min_prob_token_embedding_{args.dataset}_{model_name}_{layer}.parquet'))
+    
+    return
 
 if __name__ == '__main__':
     if args.type == 'LFCLF':
         process_lfclf()
     elif args.type == 'last_line':
         process_last_line()
+    elif args.type == 'min_prob_token':
+        process_min_prob_token()
     else:
         raise ValueError(f"Unknown type {args.type}")
