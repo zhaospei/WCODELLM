@@ -209,13 +209,13 @@ def process_lfclf():
     return
 
 def process_last_line():
-    import tree_sitter_python as tspython
+    # import tree_sitter_python as tspython
     from tree_sitter import Language, Parser
     code_parser = Parser()
-    # PY_LANGUAGE = Language('/home/trang-n/WCODELLM_MULTILANGUAGE/build/my-languages.so', 'python')
-    PY_LANGUAGE = Language(tspython.language())
-    code_parser = Parser(PY_LANGUAGE)
-    # code_parser.set_language(PY_LANGUAGE)
+    PY_LANGUAGE = Language('/home/trang-n/WCODELLM_MULTILANGUAGE/build/my-languages.so', 'python')
+    # PY_LANGUAGE = Language(tspython.language())
+    # code_parser = Parser(PY_LANGUAGE)
+    code_parser.set_language(PY_LANGUAGE)
     tokenizer = models.load_tokenizer(args.model_name)
     if 'chat' or 'instruct' in args.model_name.lower():
         instruction = True
@@ -307,7 +307,8 @@ def process_last_line():
                 layer_embedding = task_embedding['layer_embeddings'][j]
                 last_line_token_embeddings = []
                 for id in last_line_token_ids:
-                    chosen_id = max(0, id - 2)
+                    # chosen_id = max(0, id - 1)
+                    chosen_id = min(len(layer_embedding) - 1, id + 1)
                     last_line_token_embeddings.append(layer_embedding[chosen_id].tolist())
                 results = results._append({
                     "task_id": task_id, 
@@ -321,7 +322,7 @@ def process_last_line():
         
         print(f'Found {found_sample} / {len(dataset)}')
         model_name = args.model_name.replace('/', '_')
-        results.to_parquet(os.path.join(output_dir, f'last_code_token_line_embedding_{args.dataset}_{model_name}_{layer}.parquet'))
+        results.to_parquet(os.path.join(output_dir, f'last_2_token_line_embedding_{args.dataset}_{model_name}_{layer}.parquet'))
     
     return
 

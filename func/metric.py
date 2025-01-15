@@ -195,11 +195,14 @@ def get_function_name(question: str, lang: str):
     func_lines = [x for x in question.strip().split('\n') if x.strip()]
 
     if lang.lower() == 'python':
-        func_idx = [i for i in range(len(func_lines)) if func_lines[i].startswith("def ")][-1]
-        func_name = func_lines[func_idx].split('(')[0].strip()
-        # func_prefix = "\n".join(func_lines[:func_idx])
-        func_name = func_name[4:].strip()
-        return func_name
+        try:
+            func_idx = [i for i in range(len(func_lines)) if func_lines[i].startswith("def ")][-1]
+            func_name = func_lines[func_idx].split('(')[0].strip()
+            # func_prefix = "\n".join(func_lines[:func_idx])
+            func_name = func_name[4:].strip()
+            return func_name
+        except:
+            return None
     
     func_name = func_lines[-1].split('{')[0].strip()
     func_prefix = "\n".join(func_lines[:-1])

@@ -36,7 +36,7 @@ parser.add_argument('--device', type=str, default='cuda:0')
 parser.add_argument('--tensor_parallel_size', type=int, default=1)
 parser.add_argument('--fraction_of_data_to_use', type=float, default=1.0)
 parser.add_argument('--num_generations_per_prompt', type=int, default=10)
-parser.add_argument('--max_num_gen_once', type=int, default=2)
+parser.add_argument('--max_num_gen_once', type=int, default=5)
 parser.add_argument('--max_new_tokens', type=int, default=500)
 parser.add_argument('--temperature', type=float, default=1.0)
 parser.add_argument('--decoding_method', type=str, default='greedy')
@@ -108,8 +108,9 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         stop_words = dataset[0]['stopwords']
     else:
         stop_words = []
-    if args.fraction_of_data_to_use < 1.0:
-        dataset = dataset.train_test_split(test_size=(1 - args.fraction_of_data_to_use), seed=seed)['train']
+    # if args.fraction_of_data_to_use < 1.0:
+        # dataset = dataset.train_test_split(test_size=(1 - args.fraction_of_data_to_use), seed=seed)['train']
+    # dataset = list(dataset)[-250:]
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
     print('len dataset', len(dataloader))
     if old_sequences is None:
@@ -127,11 +128,11 @@ def get_generations(model_name:str, args, seed=1, old_sequences=None, max_num_ge
         if batch['task_id'][0] in old_sequences:
             sequences.append(old_sequences[batch['task_id'][0]])
             continue
-        # if os.path.exists(os.path.join(cache_dir, f'generation_sequences_output_{task_id_path}.pkl')):
-        #     print(f'Generated {task_id_path}!')
-        #     continue # generated
-        # else:
-        #     print(f'Processing {task_id_path} ...')
+        if os.path.exists(os.path.join(cache_dir, f'generation_sequences_output_{task_id_path}.pkl')):
+            print(f'Generated {task_id_path}!')
+            continue # generated
+        else:
+            print(f'Processing {task_id_path} ...')
         input_ids = batch['input_ids'].to(device)
         print(f"input_ids shape: {input_ids.shape}")
         if args.dataset not in passed_input_len_task  and (input_ids.shape[-1] >1000 or input_ids.shape[-1] < 9):
