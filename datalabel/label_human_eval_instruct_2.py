@@ -1,4 +1,6 @@
 import re
+import traceback
+
 
 languge_settings = {
     "python": {
@@ -60,12 +62,14 @@ def extract_generation_code(
     indent = setting["indent"]
 
     try:
-        code_block: str = re.findall(
-            f"```{lang.lower()}\n(.*?)```", output, re.DOTALL | re.IGNORECASE
-        )[0]
-
-        if verbose:
-            print(">>> Task: {}\n{}".format(task_id, code_block))
+        if f"```{lang.lower()}" in output:
+            code_block: str = re.findall(
+                f"```{lang.lower()}\n(.*?)```", output, re.DOTALL | re.IGNORECASE
+            )[0]
+        else:
+            code_block: str = re.findall(
+                f"```\n(.*?)```", output, re.DOTALL | re.IGNORECASE
+            )[0]
 
         # Remove main
         if setting.get("main", None) and setting["main"] in code_block:
@@ -102,6 +106,8 @@ def extract_generation_code(
         # example['generation'] = generation
 
     except Exception as ex:
+        print(traceback.format_exc())
+
         print(
             "Failed to extract code block with error `{}`:\n>>> Task: {}\n>>> Output:\n{}".format(
                 ex, task_id, output
@@ -139,7 +145,7 @@ def main(args):
     sequences = pd.read_parquet(continue_from).to_dict(orient="records")
     examples = [json.loads(x) for x in open(problem_file) if x.strip()]
     print(f"Loaded {len(sequences)} indices")
-    batch_size = 8
+    batch_size = 24
     language = args.lang
     log_dir = "tmp/humaneval"
     if not os.path.exists(log_dir):

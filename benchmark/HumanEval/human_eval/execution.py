@@ -53,7 +53,8 @@ def check_correctness(
 
                 # Disable functionalities that can make destructive changes to the test.
                 reliability_guard()
-
+                
+                # print(sample["test_code"])
                 tracemalloc.start()
                 start_time = time.time()
 
@@ -86,7 +87,6 @@ def check_correctness(
                 # Print resource usage
                 execution_time = end_time - start_time
                 result.append([execution_time, mem_peak])
-                # print('LOG#',execution_time, mem_peak)
                 shutil.rmtree = rmtree
                 os.rmdir = rmdir
                 os.chdir = chdir
@@ -297,8 +297,8 @@ def check_correctness(
                     result.append(f"failed: {err}")
             except TimeoutException:
                 result.append("timed out")
-            print(result[-1])
-            print(sample["test_code"])
+            # print(result[-1])
+            # print(sample["test_code"])
             os.chdir(origin_path)
             shutil.rmtree(tmp_dir)
         elif "sh" in language_type.lower():
@@ -561,7 +561,6 @@ def check_correctness(
 
             else:
                 result.append(f"failed: compilation error")
-
         elif "java" in language_type.lower():
             assert tmp_dir is not None, "Java should be evaluated in a temporary dir."
 
@@ -636,7 +635,7 @@ def check_correctness(
 
     if not result:
         result.append("timed out")
-    # print('LOG-RESULT',result)
+
     if len(result) > 1:
         return {
             "task_id": task_id,
@@ -645,7 +644,7 @@ def check_correctness(
             "passed": result[0] == "passed",
             "finish": -1 if "finish" not in sample else sample["finish"],
             "code": sample["test_code"],
-            "memory": result[-1][-1],
+            "memory": result[-1][-1] / 10**6,
             "execution_time": result[-1][0],
         }
     else: 
@@ -656,6 +655,8 @@ def check_correctness(
             "passed": result[0] == "passed",
             "finish": -1 if "finish" not in sample else sample["finish"],
             "code": sample["test_code"],
+            "memory": -1,
+            "execution_time": -1,
         }
 
 
